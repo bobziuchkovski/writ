@@ -1,0 +1,622 @@
+// Copyright (c) 2016 Bob Ziuchkovski
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+// THE SOFTWARE.
+
+package writ
+
+import (
+	"bytes"
+	"fmt"
+	"io"
+	"os"
+	"reflect"
+	"strings"
+	"text/template"
+	"unicode"
+)
+
+type commandError struct {
+	err error
+}
+
+func (e commandError) Error() string {
+	return e.err.Error()
+}
+
+// panicCommand reports invalid use of the Command type
+func panicCommand(format string, values ...interface{}) {
+	e := commandError{fmt.Errorf(format, values...)}
+	panic(e)
+}
+
+// A Path represents a parsed Command list as returned by Command.Decode().
+type Path []*Command
+
+// String returns the names of each command joined by spaces
+func (p Path) String() string {
+	var parts []string
+	for _, cmd := range p {
+		parts = append(parts, cmd.Name)
+	}
+	return strings.Join(parts, " ")
+}
+
+func (p Path) First() *Command {
+	return p[0]
+}
+
+func (p Path) Last() *Command {
+	return p[len(p)-1]
+}
+
+// findOption searches for the named option on the nearest ancestor command
+func (p Path) findOption(name string) *Option {
+	for i := len(p) - 1; i >= 0; i-- {
+		o := p[i].Option(name)
+		if o != nil {
+			return o
+		}
+	}
+	return nil
+}
+
+// The New() function reads the input spec, searching for fields tagged
+// with "option", "flag", or "command".  The field type and tags are used to
+// construct a corresponding Command instance, which can be used to decode
+// program arguments.  See the package overview documentation for details.
+//
+// NOTE: The spec value must be a pointer to a struct
+func New(name string, spec interface{}) *Command {
+	cmd := parseCommandSpec(name, spec, nil)
+	cmd.validate()
+	return cmd
+}
+
+// Commands are used to specify program options and subcommands.  Commands
+// are generally constructed with New() but can be created directly if added
+// flexibility or runtime dynamism is required.
+type Command struct {
+	// Required
+	Name string
+
+	// Optional
+	Aliases     []string
+	Options     []*Option
+	Subcommands []*Command
+
+	// Optional; used for help output only
+	Help        Help
+	Description string
+}
+
+func (c *Command) String() string {
+	return c.Name
+}
+
+// Decode parses the given arguments according to GNU getopt_long conventions.
+// It matches Option arguments, both short and long-form, and decodes those
+// arguments with the matched Option's Decoder field. If the Command has
+// associated subcommands, the subcommand names are matched and extracted
+// from the start of the positional arguments. Decode returns a Path that
+// identifies the selected command hierarchy, along with the remaining
+// unmatched positional arguments.
+//
+// To avoid ambiguity, subcommand matching terminates at the first unmatched
+// positional argument.  Similarly, option names are matched against the
+// command hierarchy as it exists at the point the option is encounter.  If
+// command "first" has a subcommand "second", and "second" has an option
+// "foo", then "first second --foo" is valid but "first --foo second" returns
+// an error.  If the two commands, "first" and "second", both specify a "bar"
+// option, then "first --bar second" decodes "bar" on "first", whereas
+// "first second --bar" decodes "bar" on "second".
+//
+// As with GNU getopt_long, a bare "--" argument terminates argument parsing.
+// All arguments after the first "--" argument are considered positional
+// parameters.
+func (c *Command) Decode(args []string) (path Path, positional []string, err error) {
+	c.validate()
+	c.setDefaults()
+	return parseArgs(c, args)
+}
+
+// Subcommand is a convenience method to locate subcommands by name.  If the
+// method receiver has a subcommand with the given name, the subcommand is
+// returned.  Otherwise, nil is returned.  Subcommands are matched if the
+// the name or any of its aliases match.
+func (c *Command) Subcommand(name string) *Command {
+	for _, sub := range c.Subcommands {
+		if sub.Name == name {
+			return sub
+		}
+		for _, a := range sub.Aliases {
+			if a == name {
+				return sub
+			}
+		}
+	}
+	return nil
+}
+
+// Option is a convenience method to locate options by name.  If the current
+// Command has an Option with the given name, that Option is returned.
+// Otherwise, nil is returned.  Options are matched if any of the Option's
+// names match.  Options are searched only on the method receiver, not any
+// of its subcommands.
+func (c *Command) Option(name string) *Option {
+	for _, o := range c.Options {
+		for _, n := range o.Names {
+			if name == n {
+				return o
+			}
+		}
+	}
+	return nil
+}
+
+// GroupOptions is a convenience method for building a OptionGroups, which are
+// used to customize help output.  It searches the method receiver for the
+// named options and returns a corresponding OptionGroup.  Options are matched
+// if any of the Option's names match.  If an option is not found, GroupOptions
+// panics.
+func (c *Command) GroupOptions(names ...string) OptionGroup {
+	var group OptionGroup
+	for _, n := range names {
+		o := c.Option(n)
+		if o == nil {
+			panicCommand("Option not found: %s", n)
+		}
+		group.Options = append(group.Options, o)
+	}
+	return group
+}
+
+// GroupCommands is a convenience method for building CommandGroups, which are
+// used to customize help output.  It searches the method receiver for the
+// named subcommands and returns a corresponding CommandGroup.  Subcommands are
+// matched if their name or any of their aliases match.  If a subcommand is not
+// found, GroupCommands panics.
+func (c *Command) GroupCommands(names ...string) CommandGroup {
+	var group CommandGroup
+	for _, n := range names {
+		c := c.Subcommand(n)
+		if c == nil {
+			panicCommand("Option not found: %s", n)
+		}
+		group.Commands = append(group.Commands, c)
+	}
+	return group
+}
+
+// WriteHelp renders help output to the given io.Writer.  Output is influenced
+// by the Command's Help field.  See the Help type for details.
+func (c *Command) WriteHelp(w io.Writer) error {
+	var tmpl *template.Template
+	if c.Help.Template != nil {
+		tmpl = c.Help.Template
+	} else {
+		tmpl = defaultTemplate
+	}
+
+	buf := bytes.NewBuffer(nil)
+	err := tmpl.Execute(buf, c)
+	if err != nil {
+		panicCommand("failed to render help: %s", err)
+	}
+	_, err = buf.WriteTo(w)
+	return err
+}
+
+// ExitHelp writes help output and terminates the program.  If err is nil,
+// the output is written to os.Stdout and the program terminates with a 0 exit
+// code.  Otherwise, both the help output and error message are written to
+// os.Stderr and the program terminates with a 1 exit code.
+func (c *Command) ExitHelp(err error) {
+	if err == nil {
+		c.WriteHelp(os.Stdout)
+		os.Exit(0)
+	}
+	c.WriteHelp(os.Stderr)
+	fmt.Fprintf(os.Stderr, "\nError: %s\n", err)
+	os.Exit(1)
+}
+
+// validate command spec
+func (c *Command) validate() {
+	if c.Name == "" {
+		panicCommand("Command name cannot be empty")
+	}
+	if strings.HasPrefix(c.Name, "-") {
+		panicCommand("Command names cannot begin with '-' (command %s)", c.Name)
+	}
+	for _, a := range c.Aliases {
+		if strings.HasPrefix(a, "-") {
+			panicCommand("Command aliases cannot begin with '-' (command %s, alias %s)", c.Name, a)
+		}
+	}
+
+	seen := make(map[string]bool)
+	for _, sub := range c.Subcommands {
+		sub.validate()
+		subnames := append(sub.Aliases, sub.Name)
+		for _, name := range subnames {
+			_, present := seen[name]
+			if present {
+				panicCommand("command names must be unique (%s is specified multiple times", name)
+			}
+			seen[name] = true
+		}
+	}
+
+	seen = make(map[string]bool)
+	for _, o := range c.Options {
+		o.validate()
+		for _, name := range o.Names {
+			_, present := seen[name]
+			if present {
+				panicCommand("command names must be unique (%s is specified multiple times", name)
+			}
+			seen[name] = true
+		}
+	}
+}
+
+func (c *Command) setDefaults() {
+	for _, opt := range c.Options {
+		defaulter, ok := opt.Decoder.(OptionDefaulter)
+		if ok {
+			defaulter.SetDefault()
+		}
+	}
+	for _, sub := range c.Subcommands {
+		sub.setDefaults()
+	}
+}
+
+/*
+ * Argument parsing
+ */
+
+func parseArgs(c *Command, args []string) (path Path, positional []string, err error) {
+	path = Path{c}
+	positional = make([]string, 0) // positional args should never be nil
+
+	seen := make(map[*Option]bool)
+	parseCmd, parseOpt := true, true
+	for i := 0; i < len(args); i++ {
+		a := args[i]
+		if parseCmd {
+			subcmd := path.Last().Subcommand(a)
+			if subcmd != nil {
+				path = append(path, subcmd)
+				continue
+			}
+		}
+
+		if parseOpt && strings.HasPrefix(a, "-") {
+			if a == "-" {
+				positional = append(positional, a)
+				continue
+			}
+			if a == "--" {
+				parseOpt = false
+				parseCmd = false
+				continue
+			}
+
+			var opt *Option
+			opt, args, err = processOption(path, args, i)
+			if err != nil {
+				return
+			}
+			_, present := seen[opt]
+			if present && !opt.Plural {
+				err = fmt.Errorf("option %q specified too many times", args[0])
+				return
+			}
+			seen[opt] = true
+			continue
+		}
+
+		// Unmatched positional arg
+		parseCmd = false
+		positional = append(positional, a)
+	}
+	return
+}
+
+func processOption(path Path, args []string, optidx int) (opt *Option, newargs []string, err error) {
+	if strings.HasPrefix(args[optidx], "--") {
+		return processLongOption(path, args, optidx)
+	} else {
+		return processShortOption(path, args, optidx)
+	}
+}
+
+func processLongOption(path Path, args []string, optidx int) (opt *Option, newargs []string, err error) {
+	keyval := strings.SplitN(strings.TrimPrefix(args[optidx], "--"), "=", 2)
+	name := keyval[0]
+	newargs = args
+
+	opt = path.findOption(name)
+	if opt == nil {
+		err = fmt.Errorf("option '--%s' is not recognized", name)
+		return
+	}
+	if opt.Flag {
+		if len(keyval) == 2 {
+			err = fmt.Errorf("flag '--%s' does not accept an argument", name)
+		} else {
+			err = opt.Decoder.Decode("")
+		}
+	} else {
+		if len(keyval) == 2 {
+			err = opt.Decoder.Decode(keyval[1])
+		} else {
+			if len(args[optidx:]) < 2 {
+				err = fmt.Errorf("option '--%s' requires an argument", name)
+			} else {
+				// Consume the next arg
+				err = opt.Decoder.Decode(args[optidx+1])
+				newargs = duplicateArgs(args)
+				newargs = append(newargs[:optidx+1], newargs[optidx+2:]...)
+			}
+		}
+	}
+	return
+}
+
+func processShortOption(path Path, args []string, optidx int) (opt *Option, newargs []string, err error) {
+	keyval := strings.SplitN(strings.TrimPrefix(args[optidx], "-"), "", 2)
+	name := keyval[0]
+	newargs = args
+
+	opt = path.findOption(name)
+	if opt == nil {
+		err = fmt.Errorf("option '-%s' is not recognized", name)
+		return
+	}
+	if opt.Flag {
+		err = opt.Decoder.Decode("")
+		if len(keyval) == 2 {
+			// Insert remaining short-form opts as a new arg after the current one
+			newargs = duplicateArgs(args)
+			newargs = append(newargs[:optidx+1], append([]string{"-" + keyval[1]}, newargs[optidx+1:]...)...)
+		}
+	} else {
+		if len(keyval) == 2 {
+			err = opt.Decoder.Decode(keyval[1])
+		} else {
+			if len(args[optidx:]) < 2 {
+				err = fmt.Errorf("option '-%s' requires an argument", name)
+			} else {
+				// Consume the next arg
+				err = opt.Decoder.Decode(args[optidx+1])
+				newargs = duplicateArgs(args)
+				newargs = append(newargs[:optidx+1], newargs[optidx+2:]...)
+			}
+		}
+	}
+	return
+}
+
+func duplicateArgs(args []string) []string {
+	dupe := make([]string, len(args))
+	for i := range args {
+		dupe[i] = args[i]
+	}
+	return dupe
+}
+
+/*
+ * Command spec parsing
+ */
+
+var (
+	decoderPtr *OptionDecoder
+	decoderT   = reflect.TypeOf(decoderPtr).Elem()
+
+	aliasTag       = "alias"
+	commandTag     = "command"
+	defaultTag     = "default"
+	descriptionTag = "description"
+	envTag         = "env"
+	flagTag        = "flag"
+	optionTag      = "option"
+	placeholderTag = "placeholder"
+	invalidTags    = map[string][]string{
+		commandTag: []string{defaultTag, envTag, flagTag, optionTag, placeholderTag},
+		flagTag:    []string{aliasTag, commandTag, defaultTag, envTag, optionTag, placeholderTag},
+		optionTag:  []string{aliasTag, commandTag, flagTag},
+	}
+)
+
+func parseCommandSpec(name string, spec interface{}, path Path) *Command {
+	rval := reflect.ValueOf(spec)
+	if rval.Kind() != reflect.Ptr {
+		panicCommand("spec must be a pointer to struct type, not %s", rval.Kind())
+	}
+	if rval.Elem().Kind() != reflect.Struct {
+		panicCommand("spec must be a pointer to struct type, not %s", rval.Kind())
+	}
+	rval = rval.Elem()
+
+	cmd := &Command{Name: name}
+	path = append(path, cmd)
+
+	for i := 0; i < rval.Type().NumField(); i++ {
+		field := rval.Type().Field(i)
+		fieldVal := rval.FieldByIndex(field.Index)
+		if field.Tag.Get(commandTag) != "" {
+			cmd.Subcommands = append(cmd.Subcommands, parseCommandField(field, fieldVal, path))
+			continue
+		}
+		if field.Tag.Get(flagTag) != "" {
+			cmd.Options = append(cmd.Options, parseFlagField(field, fieldVal))
+			continue
+		}
+		if field.Tag.Get(optionTag) != "" {
+			cmd.Options = append(cmd.Options, parseOptionField(field, fieldVal))
+			continue
+		}
+	}
+
+	if len(cmd.Options) > 0 {
+		cmd.Help.OptionGroups = []OptionGroup{
+			OptionGroup{Options: cmd.Options, Header: "Available Options:"},
+		}
+	}
+	if len(cmd.Subcommands) > 0 {
+		cmd.Help.CommandGroups = []CommandGroup{
+			CommandGroup{Commands: cmd.Subcommands, Header: "Available Commands:"},
+		}
+	}
+	cmd.Help.Usage = fmt.Sprintf("Usage: %s [OPTION]... [ARG]...", path.String())
+	return cmd
+}
+
+func parseCommandField(field reflect.StructField, fieldVal reflect.Value, path Path) *Command {
+	checkTags(field, commandTag)
+	checkExported(field, commandTag)
+
+	names := parseCommaNames(field.Tag.Get(commandTag))
+	if len(names) == 0 {
+		panicCommand("commands must have a name (field %s)", field.Name)
+	}
+	if len(names) != 1 {
+		panicCommand("commands must have a single name (field %s)", field.Name)
+	}
+
+	cmd := parseCommandSpec(names[0], fieldVal.Addr().Interface(), path)
+	cmd.Aliases = parseCommaNames(field.Tag.Get(aliasTag))
+	cmd.Description = field.Tag.Get(descriptionTag)
+	cmd.validate()
+	return cmd
+}
+
+func parseFlagField(field reflect.StructField, fieldVal reflect.Value) *Option {
+	checkTags(field, flagTag)
+	checkExported(field, flagTag)
+
+	names := parseCommaNames(field.Tag.Get(flagTag))
+	if len(names) == 0 {
+		panicCommand("at least one flag name must be specified (field %s)", field.Name)
+	}
+
+	opt := &Option{
+		Names:       names,
+		Flag:        true,
+		Description: field.Tag.Get(descriptionTag),
+	}
+
+	if field.Type.Implements(decoderT) {
+		opt.Decoder = fieldVal.Interface().(OptionDecoder)
+	} else if fieldVal.CanAddr() && reflect.PtrTo(field.Type).Implements(decoderT) {
+		opt.Decoder = fieldVal.Addr().Interface().(OptionDecoder)
+	} else if field.Type.Kind() == reflect.Ptr && field.Type.Elem().Implements(decoderT) && !fieldVal.IsNil() {
+		// TODO: Test if this branch is needed
+		opt.Decoder = fieldVal.Elem().Interface().(OptionDecoder)
+	} else {
+		switch field.Type.Kind() {
+		case reflect.Bool:
+			opt.Decoder = NewFlagDecoder(fieldVal.Addr().Interface().(*bool))
+		case reflect.Int:
+			opt.Decoder = NewFlagAccumulator(fieldVal.Addr().Interface().(*int))
+			opt.Plural = true
+		default:
+			panicCommand("field type not valid as a flag (field %s)", field.Name)
+		}
+	}
+
+	opt.validate()
+	return opt
+}
+
+func parseOptionField(field reflect.StructField, fieldVal reflect.Value) *Option {
+	checkTags(field, optionTag)
+	checkExported(field, optionTag)
+
+	names := parseCommaNames(field.Tag.Get(optionTag))
+	if len(names) == 0 {
+		panicCommand("at least one option name must be specified (field %s)", field.Name)
+	}
+
+	opt := &Option{
+		Names:       names,
+		Description: field.Tag.Get(descriptionTag),
+		Placeholder: field.Tag.Get(placeholderTag),
+	}
+
+	if field.Type.Implements(decoderT) {
+		opt.Decoder = fieldVal.Interface().(OptionDecoder)
+	} else if fieldVal.CanAddr() && reflect.PtrTo(field.Type).Implements(decoderT) {
+		opt.Decoder = fieldVal.Addr().Interface().(OptionDecoder)
+	} else if field.Type.Kind() == reflect.Ptr && field.Type.Elem().Implements(decoderT) && !fieldVal.IsNil() {
+		// TODO: Test if this branch is needed
+		opt.Decoder = fieldVal.Elem().Interface().(OptionDecoder)
+	} else {
+		if fieldVal.Kind() == reflect.Bool {
+			panicCommand("bool fields are not valid as options.  Use a \"flag\" tag instead (field %s)", field.Name)
+		}
+		if fieldVal.Kind() == reflect.Slice || fieldVal.Kind() == reflect.Map {
+			opt.Plural = true
+		}
+		decoder, err := NewOptionDecoder(fieldVal.Addr().Interface())
+		if err != nil {
+			panicCommand("field type not valid as an option (field %s)", field.Name)
+		}
+		opt.Decoder = decoder
+	}
+
+	defaultArg := field.Tag.Get(defaultTag)
+	if defaultArg != "" {
+		opt.Decoder = NewDefaulter(opt.Decoder, defaultArg)
+	}
+	envName := field.Tag.Get(envTag)
+	if envName != "" {
+		opt.Decoder = NewEnvDefaulter(opt.Decoder, envName)
+	}
+
+	opt.validate()
+	return opt
+}
+
+func checkTags(field reflect.StructField, fieldType string) {
+	badTags, present := invalidTags[fieldType]
+	if !present {
+		panic("BUG: fieldType not present in invalidTags map")
+	}
+	for _, t := range badTags {
+		if field.Tag.Get(t) != "" {
+			panicCommand("tag %s is not valid for %ss (field %s)", t, fieldType, field.Name)
+		}
+	}
+}
+
+func checkExported(field reflect.StructField, fieldType string) {
+	if field.PkgPath != "" {
+		panicCommand("%ss must be exported (field %s)", fieldType, field.Name)
+	}
+}
+
+func parseCommaNames(spec string) []string {
+	isSep := func(r rune) bool {
+		return r == ',' || unicode.IsSpace(r)
+	}
+	return strings.FieldsFunc(spec, isSep)
+}
