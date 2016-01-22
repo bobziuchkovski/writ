@@ -19,7 +19,7 @@ Commands and options may be defined either implicitly via struct tags, or explic
 
 ## Stability and API Promise
 
-Writ is new but stable.  It has extensive test coverage for command and option parsing.  Help tests are coming soon.
+Writ is new but stable.  It has thorough test coverage, particularly for command and option parsing.
 
 The API is mostly established, but might change in minor breaking ways prior to the 1.0 release.  Any API changes after 1.0 are guaranteed to remain backwards compatible.  This is similar to the Go language promise.
 
