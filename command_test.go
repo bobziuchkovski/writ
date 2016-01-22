@@ -804,57 +804,93 @@ func validateIOFieldTest(spec *ioFieldSpec, test ioFieldTest) error {
  */
 
 type customTestFlag struct {
+	val *bool
+}
+
+func (d customTestFlag) Decode(arg string) error {
+	*d.val = true
+	return nil
+}
+
+type customTestFlagPtr struct {
 	val bool
 }
 
-func (d *customTestFlag) Decode(arg string) error {
+func (d *customTestFlagPtr) Decode(arg string) error {
 	d.val = true
 	return nil
 }
 
 type customTestOption struct {
-	val string
+	val *string
 }
 
-func (d *customTestOption) Decode(arg string) error {
+func (d customTestOption) Decode(arg string) error {
 	if strings.HasPrefix(arg, "foo") {
-		d.val = arg
+		*d.val = arg
 		return nil
 	} else {
 		return fmt.Errorf("customTestOption values must begin with foo")
 	}
 }
 
-type customDecoderFieldSpec struct {
-	CustomFlag   customTestFlag   `flag:"f, flag" description:"a custom flag field"`
-	CustomOption customTestOption `option:"o, opt" description:"a custom option field"`
+type customTestOptionPtr struct {
+	val string
 }
+
+func (d *customTestOptionPtr) Decode(arg string) error {
+	if strings.HasPrefix(arg, "foo") {
+		d.val = arg
+		return nil
+	} else {
+		return fmt.Errorf("customTestOptionPtr values must begin with foo")
+	}
+}
+
+type customDecoderFieldSpec struct {
+	CustomFlag      customTestFlag      `flag:"flag" description:"a custom flag field"`
+	CustomFlagPtr   customTestFlagPtr   `flag:"flagptr" description:"a custom flag field with pointer receiver"`
+	CustomOption    customTestOption    `option:"opt" description:"a custom option field"`
+	CustomOptionPtr customTestOptionPtr `option:"optptr" description:"a custom option field with pointer receiver"`
+}
+
+var trueval = true
+var foobarval = "foobar"
 
 var customDecoderFieldTests = []fieldTest{
 	// Custom flag
-	{Args: []string{"-f"}, Valid: true, Field: "CustomFlag", Value: customTestFlag{val: true}},
-	{Args: []string{"--flag"}, Valid: true, Field: "CustomFlag", Value: customTestFlag{val: true}},
+	{Args: []string{"--flag"}, Valid: true, Field: "CustomFlag", Value: customTestFlag{val: &trueval}},
 	{Args: []string{"--flag", "--flag"}, Valid: false}, // Plural must be set explicitly
-	{Args: []string{"-ff"}, Valid: false},              // Plural must be set explicitly
+
+	// Custom flag with pointer receiver
+	{Args: []string{"--flagptr"}, Valid: true, Field: "CustomFlagPtr", Value: customTestFlagPtr{val: true}},
+	{Args: []string{"--flagptr", "--flagptr"}, Valid: false}, // Plural must be set explicitly
 
 	// Custom option
-	{Args: []string{"-ofoobar"}, Valid: true, Field: "CustomOption", Value: customTestOption{val: "foobar"}},
-	{Args: []string{"-o", "foobar"}, Valid: true, Field: "CustomOption", Value: customTestOption{val: "foobar"}},
-	{Args: []string{"--opt", "foobar"}, Valid: true, Field: "CustomOption", Value: customTestOption{val: "foobar"}},
-	{Args: []string{"--opt=foobar"}, Valid: true, Field: "CustomOption", Value: customTestOption{val: "foobar"}},
-	{Args: []string{"-o", "puppies"}, Valid: false},
-	{Args: []string{"-opuppies"}, Valid: false},
+	{Args: []string{"--opt", "foobar"}, Valid: true, Field: "CustomOption", Value: customTestOption{val: &foobarval}},
+	{Args: []string{"--opt=foobar"}, Valid: true, Field: "CustomOption", Value: customTestOption{val: &foobarval}},
 	{Args: []string{"-opt=puppies"}, Valid: false},
 	{Args: []string{"-opt", "puppies"}, Valid: false},
-	{Args: []string{"-o"}, Valid: false},
 	{Args: []string{"--opt"}, Valid: false},
-	{Args: []string{"--opt", "foobar", "-o", "foobar"}, Valid: false}, // Plural must be set explicitly
-	{Args: []string{"-ofoobar", "-ofoobar"}, Valid: false},            // Plural must be set explicitly
+	{Args: []string{"--opt", "foobar", "-opt", "foobar"}, Valid: false}, // Plural must be set explicitly
+
+	// Custom option with pointer receiver
+	{Args: []string{"--optptr", "foobar"}, Valid: true, Field: "CustomOptionPtr", Value: customTestOptionPtr{val: "foobar"}},
+	{Args: []string{"--optptr=foobar"}, Valid: true, Field: "CustomOptionPtr", Value: customTestOptionPtr{val: "foobar"}},
+	{Args: []string{"-optptr=puppies"}, Valid: false},
+	{Args: []string{"-optptr", "puppies"}, Valid: false},
+	{Args: []string{"--optptr"}, Valid: false},
+	{Args: []string{"--optptr", "foobar", "-optptr", "foobar"}, Valid: false}, // Plural must be set explicitly
 }
 
 func TestCustomDecoderFields(t *testing.T) {
 	for _, test := range customDecoderFieldTests {
-		spec := &customDecoderFieldSpec{}
+		var flagval bool
+		var optval string
+		spec := &customDecoderFieldSpec{
+			CustomFlag:   customTestFlag{&flagval},
+			CustomOption: customTestOption{&optval},
+		}
 		runFieldTest(t, spec, test)
 	}
 }
@@ -1346,6 +1382,10 @@ var invalidSpecTests = []struct {
 		Description: "Command specs must be a pointer to struct 2",
 		Spec:        42,
 	},
+	{
+		Description: "Command specs must be a pointer to struct 3",
+		Spec:        (*int)(nil),
+	},
 
 	// Invalid option specs
 	{
@@ -1488,6 +1528,24 @@ var invalidSpecTests = []struct {
 			Option int  `option:"foo"`
 		}{},
 	},
+	{
+		Description: "Flag may only be bools, ints, and OptionDecoders 1",
+		Spec: &struct {
+			Flag string `flag:"foo"`
+		}{},
+	},
+	{
+		Description: "Flag may only be bools, ints, and OptionDecoders 2",
+		Spec: &struct {
+			Flag int32 `flag:"foo"`
+		}{},
+	},
+	{
+		Description: "Flag may only be bools, ints, and OptionDecoders 3",
+		Spec: &struct {
+			Flag struct{} `flag:"foo"`
+		}{},
+	},
 
 	// Invalid mixes of command, flag, and option
 	{
@@ -1560,6 +1618,10 @@ var invalidCommandTests = []struct {
 	Description string
 	Command     *Command
 }{
+	{
+		Description: "Command name cannot be empty",
+		Command:     &Command{Name: ""},
+	},
 	{
 		Description: "Command names cannot begin with -",
 		Command:     &Command{Name: "-command"},
