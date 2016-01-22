@@ -544,9 +544,6 @@ func parseFlagField(field reflect.StructField, fieldVal reflect.Value) *Option {
 		opt.Decoder = fieldVal.Interface().(OptionDecoder)
 	} else if fieldVal.CanAddr() && reflect.PtrTo(field.Type).Implements(decoderT) {
 		opt.Decoder = fieldVal.Addr().Interface().(OptionDecoder)
-	} else if field.Type.Kind() == reflect.Ptr && field.Type.Elem().Implements(decoderT) && !fieldVal.IsNil() {
-		// TODO: Test if this branch is needed
-		opt.Decoder = fieldVal.Elem().Interface().(OptionDecoder)
 	} else {
 		switch field.Type.Kind() {
 		case reflect.Bool:
@@ -582,9 +579,6 @@ func parseOptionField(field reflect.StructField, fieldVal reflect.Value) *Option
 		opt.Decoder = fieldVal.Interface().(OptionDecoder)
 	} else if fieldVal.CanAddr() && reflect.PtrTo(field.Type).Implements(decoderT) {
 		opt.Decoder = fieldVal.Addr().Interface().(OptionDecoder)
-	} else if field.Type.Kind() == reflect.Ptr && field.Type.Elem().Implements(decoderT) && !fieldVal.IsNil() {
-		// TODO: Test if this branch is needed
-		opt.Decoder = fieldVal.Elem().Interface().(OptionDecoder)
 	} else {
 		if fieldVal.Kind() == reflect.Bool {
 			panicCommand("bool fields are not valid as options.  Use a \"flag\" tag instead (field %s)", field.Name)
