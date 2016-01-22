@@ -27,6 +27,7 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+	"unicode"
 )
 
 var (
@@ -108,12 +109,18 @@ func (o *Option) validate() {
 	if len(o.Names) == 0 {
 		panicOption("Options require at least one name: %#v", o)
 	}
-	for _, n := range o.Names {
-		if strings.HasPrefix(n, "-") {
-			panicOption("Option names cannot begin with '-' (option %s)", n)
-		}
-		if n == "" {
+	for _, name := range o.Names {
+		if name == "" {
 			panicOption("Option names cannot be blank: %#v", o)
+		}
+		if strings.HasPrefix(name, "-") {
+			panicOption("Option names cannot begin with '-' (option %s)", name)
+		}
+		runes := []rune(name)
+		for _, r := range runes {
+			if unicode.IsSpace(r) {
+				panicOption("Option names cannot have spaces (option %q)", name)
+			}
 		}
 	}
 	if o.Decoder == nil {

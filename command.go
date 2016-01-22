@@ -247,9 +247,22 @@ func (c *Command) validate() {
 	if strings.HasPrefix(c.Name, "-") {
 		panicCommand("Command names cannot begin with '-' (command %s)", c.Name)
 	}
+	runes := []rune(c.Name)
+	for _, r := range runes {
+		if unicode.IsSpace(r) {
+			panicCommand("Command names cannot have spaces (command %q)", c.Name)
+		}
+	}
+
 	for _, a := range c.Aliases {
 		if strings.HasPrefix(a, "-") {
 			panicCommand("Command aliases cannot begin with '-' (command %s, alias %s)", c.Name, a)
+		}
+		runes := []rune(a)
+		for _, r := range runes {
+			if unicode.IsSpace(r) {
+				panicCommand("Command aliases cannot have spaces (command %s, alias %q)", c.Name, a)
+			}
 		}
 	}
 
