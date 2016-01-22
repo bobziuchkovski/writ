@@ -25,4 +25,4 @@ var Version = struct {
 	Major int
 	Minor int
 	Patch int
-}{0, 8, 0}
+}{0, 8, 1}

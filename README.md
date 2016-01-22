@@ -15,7 +15,7 @@ Commands and options may be defined either implicitly via struct tags, or explic
 
 ## Current version
 
-0.8.0
+0.8.1
 
 ## Stability and API Promise
 
