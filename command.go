@@ -172,7 +172,7 @@ func (c *Command) Option(name string) *Option {
 	return nil
 }
 
-// GroupOptions is a convenience method for building a OptionGroups, which are
+// GroupOptions is a convenience method for building OptionGroups, which are
 // used to customize help output.  It searches the method receiver for the
 // named options and returns a corresponding OptionGroup.  Options are matched
 // if any of the Option's names match.  If an option is not found, GroupOptions
@@ -273,7 +273,7 @@ func (c *Command) validate() {
 		for _, name := range subnames {
 			_, present := seen[name]
 			if present {
-				panicCommand("command names must be unique (%s is specified multiple times", name)
+				panicCommand("command names must be unique (%s is specified multiple times)", name)
 			}
 			seen[name] = true
 		}
@@ -285,7 +285,7 @@ func (c *Command) validate() {
 		for _, name := range o.Names {
 			_, present := seen[name]
 			if present {
-				panicCommand("command names must be unique (%s is specified multiple times", name)
+				panicCommand("command names must be unique (%s is specified multiple times)", name)
 			}
 			seen[name] = true
 		}
