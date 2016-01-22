@@ -27,20 +27,20 @@ func Example_explicit() {
 	config := &Config{}
 	cmd := &writ.Command{Name: "explicit"}
 	cmd.Options = []*writ.Option{
-		&writ.Option{
+		{
 			Names:       []string{"h", "help"},
 			Description: "Display this help text and exit",
 			Decoder:     writ.NewFlagDecoder(&config.help),
 			Flag:        true,
 		},
-		&writ.Option{
+		{
 			Names:       []string{"v"},
 			Description: "Increase verbosity; may be specified more than once",
 			Decoder:     writ.NewFlagAccumulator(&config.verbosity),
 			Flag:        true,
 			Plural:      true,
 		},
-		&writ.Option{
+		{
 			Names:       []string{"t", "tolerance"},
 			Description: "Set the tolerance level (from 0.0 - 1.0)",
 			Placeholder: "DECIMAL",
