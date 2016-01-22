@@ -1,11 +1,17 @@
 # Writ Changelog
 
+## 0.8.2 (2016-01-22)
+
+- Fix: Stop parsing subcommands after a bare "-" argument
+- Fix: Ensure command and option names have no spaces in them
+- Tests: Add additional test coverage for comamnds and options
+
 ## 0.8.1 (2016-01-22)
 
-- Panic NewOptionDecoder() if input type is unsupported
-- Add an example of explicitly creating a Command and Options
-- Update documentation
+- API: Panic NewOptionDecoder() if input type is unsupported
+- Docs: Add an example of explicitly creating a Command and Options
+- Docs: Update documentation
 
 ## 0.8.0 (2016-01-22)
 
-- Initial release on Github
+- Misc: Initial release on Github
