@@ -314,6 +314,7 @@ func parseArgs(c *Command, args []string) (path Path, positional []string, err e
 		if parseOpt && strings.HasPrefix(a, "-") {
 			if a == "-" {
 				positional = append(positional, a)
+				parseCmd = false
 				continue
 			}
 			if a == "--" {
