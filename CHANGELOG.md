@@ -1,5 +1,9 @@
 # Writ Changelog
 
+## 0.8.4 (2016-01-22)
+
+- Feature: Hide options and commands with empty descriptions from help output
+
 ## 0.8.3 (2016-01-22)
 
 - Misc: Minor code cleanup
