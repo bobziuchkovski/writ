@@ -13,5 +13,6 @@ matrix:
     - go: tip
 
 script:
+- go tool -n vet || go get golang.org/x/tools/cmd/vet
 - go vet
 - go test -v
