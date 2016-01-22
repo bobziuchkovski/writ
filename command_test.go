@@ -48,17 +48,20 @@ func CompareField(structval interface{}, field string, value interface{}) (equal
  */
 
 type topSpec struct {
-	MidSpec midSpec `command:"mid" alias:"second, 2nd" description:"a mid-level command"`
-	Top     int     `option:"t, topval" description:"an option on a top-level command"`
+	MidSpec  midSpec `command:"mid" alias:"second, 2nd" description:"a mid-level command"`
+	HelpFlag bool    `flag:"h" description:"help flag on a top-level command"`
+	Top      int     `option:"t, topval" description:"an option on a top-level command"`
 }
 
 type midSpec struct {
 	Mid        int        `option:"m, midval" description:"an option on a mid-level command"`
+	HelpFlag   bool       `flag:"h" description:"help flag on a mid-level command"`
 	BottomSpec bottomSpec `command:"bottom" alias:"third" description:"a bottom-level command"`
 }
 
 type bottomSpec struct {
-	Bottom int `option:"b, bottomval" description:"an option on a bottom-level command"`
+	Bottom   int  `option:"b, bottomval" description:"an option on a bottom-level command"`
+	HelpFlag bool `flag:"h" description:"help flag on a bottom-level command"`
 }
 
 type commandFieldTest struct {
@@ -196,6 +199,23 @@ var commandFieldTests = []commandFieldTest{
 	{Args: []string{"bottom", "-b", "3"}, Valid: false},
 	{Args: []string{"-b", "3", "bottom"}, Valid: false},
 	{Args: []string{"-b", "3", "mid", "bottom"}, Valid: false},
+
+	// Duplicate option routing (HelpFlag)
+	{Args: []string{"-h"}, Valid: true, Path: "top", Positional: []string{}, Field: "HelpFlagTop", Value: true},
+	{Args: []string{"-h"}, Valid: true, Field: "HelpFlagMid", Value: false},
+	{Args: []string{"-h"}, Valid: true, Field: "HelpFlagBottom", Value: false},
+	{Args: []string{"-h", "mid"}, Valid: true, Path: "top mid", Positional: []string{}, Field: "HelpFlagTop", Value: true},
+	{Args: []string{"-h", "mid"}, Valid: true, Field: "HelpFlagMid", Value: false},
+	{Args: []string{"-h", "mid"}, Valid: true, Field: "HelpFlagBottom", Value: false},
+	{Args: []string{"mid", "-h"}, Valid: true, Path: "top mid", Positional: []string{}, Field: "HelpFlagMid", Value: true},
+	{Args: []string{"mid", "-h"}, Valid: true, Field: "HelpFlagTop", Value: false},
+	{Args: []string{"mid", "-h"}, Valid: true, Field: "HelpFlagBottom", Value: false},
+	{Args: []string{"mid", "-h", "bottom"}, Valid: true, Path: "top mid bottom", Positional: []string{}, Field: "HelpFlagMid", Value: true},
+	{Args: []string{"mid", "-h", "bottom"}, Valid: true, Field: "HelpFlagTop", Value: false},
+	{Args: []string{"mid", "-h", "bottom"}, Valid: true, Field: "HelpFlagBottom", Value: false},
+	{Args: []string{"mid", "bottom", "-h"}, Valid: true, Path: "top mid bottom", Positional: []string{}, Field: "HelpFlagBottom", Value: true},
+	{Args: []string{"mid", "bottom", "-h"}, Valid: true, Field: "HelpFlagTop", Value: false},
+	{Args: []string{"mid", "bottom", "-h"}, Valid: true, Field: "HelpFlagMid", Value: false},
 }
 
 func TestCommandFields(t *testing.T) {
@@ -214,9 +234,12 @@ func runCommandFieldTest(t *testing.T, spec *topSpec, test commandFieldTest) {
 	cmd := New("top", spec)
 	path, positional, err := cmd.Decode(test.Args)
 	values := map[string]interface{}{
-		"Top":    spec.Top,
-		"Mid":    spec.MidSpec.Mid,
-		"Bottom": spec.MidSpec.BottomSpec.Bottom,
+		"Top":            spec.Top,
+		"Mid":            spec.MidSpec.Mid,
+		"Bottom":         spec.MidSpec.BottomSpec.Bottom,
+		"HelpFlagTop":    spec.HelpFlag,
+		"HelpFlagMid":    spec.MidSpec.HelpFlag,
+		"HelpFlagBottom": spec.MidSpec.BottomSpec.HelpFlag,
 	}
 	if !test.Valid {
 		if err == nil {
