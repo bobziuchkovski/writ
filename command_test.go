@@ -306,12 +306,8 @@ func runDefaultFieldTest(t *testing.T, spec interface{}, test defaultFieldTest) 
 	}
 
 	if test.EnvKey != "" {
-		realval, present := os.LookupEnv(test.EnvKey)
-		if present {
-			defer (func() { os.Setenv(test.EnvKey, realval) })()
-		} else {
-			defer (func() { os.Unsetenv(test.EnvKey) })()
-		}
+		realval := os.Getenv(test.EnvKey)
+		defer (func() { os.Setenv(test.EnvKey, realval) })()
 		os.Setenv(test.EnvKey, test.EnvValue)
 	}
 	cmd := New("test", spec)
