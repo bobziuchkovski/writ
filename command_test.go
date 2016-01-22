@@ -28,6 +28,7 @@ import (
 	"os"
 	"reflect"
 	"strconv"
+	"strings"
 	"testing"
 )
 
@@ -48,16 +49,16 @@ func CompareField(structval interface{}, field string, value interface{}) (equal
 
 type topSpec struct {
 	MidSpec midSpec `command:"mid" alias:"second, 2nd" description:"a mid-level command"`
-	Top     int     `option:"t" description:"an option on a top-level command"`
+	Top     int     `option:"t, topval" description:"an option on a top-level command"`
 }
 
 type midSpec struct {
-	Mid        int        `option:"m" description:"an option on a mid-level command"`
+	Mid        int        `option:"m, midval" description:"an option on a mid-level command"`
 	BottomSpec bottomSpec `command:"bottom" alias:"third" description:"a bottom-level command"`
 }
 
 type bottomSpec struct {
-	Bottom int `option:"b" description:"an option on a bottom-level command"`
+	Bottom int `option:"b, bottomval" description:"an option on a bottom-level command"`
 }
 
 type commandFieldTest struct {
@@ -73,7 +74,10 @@ type commandFieldTest struct {
 var commandFieldTests = []commandFieldTest{
 	// Path: top
 	{Args: []string{}, Valid: true, Path: "top", Positional: []string{}},
+	{Args: []string{"-"}, Valid: true, Path: "top", Positional: []string{"-"}},
+	{Args: []string{"-", "mid"}, Valid: true, Path: "top", Positional: []string{"-", "mid"}},
 	{Args: []string{"--"}, Valid: true, Path: "top", Positional: []string{}},
+	{Args: []string{"--", "mid"}, Valid: true, Path: "top", Positional: []string{"mid"}},
 	{Args: []string{"-t", "1"}, Valid: true, Path: "top", Positional: []string{}, Field: "Top", Value: 1},
 	{Args: []string{"foo", "-t", "1"}, Valid: true, Path: "top", Positional: []string{"foo"}, Field: "Top", Value: 1},
 	{Args: []string{"-t", "1", "foo"}, Valid: true, Path: "top", Positional: []string{"foo"}, Field: "Top", Value: 1},
@@ -82,18 +86,34 @@ var commandFieldTests = []commandFieldTest{
 	{Args: []string{"-t", "1", "foo", "bar"}, Valid: true, Path: "top", Positional: []string{"foo", "bar"}, Field: "Top", Value: 1},
 	{Args: []string{"--", "mid"}, Valid: true, Path: "top", Positional: []string{"mid"}},
 	{Args: []string{"-t", "1", "--", "mid"}, Valid: true, Path: "top", Positional: []string{"mid"}, Field: "Top", Value: 1},
+	{Args: []string{"-", "-t", "1", "--", "mid"}, Valid: true, Path: "top", Positional: []string{"-", "mid"}, Field: "Top", Value: 1},
 	{Args: []string{"--", "-t", "1", "mid"}, Valid: true, Path: "top", Positional: []string{"-t", "1", "mid"}, Field: "Top", Value: 0},
+	{Args: []string{"--", "-t", "1", "-", "mid"}, Valid: true, Path: "top", Positional: []string{"-t", "1", "-", "mid"}, Field: "Top", Value: 0},
 	{Args: []string{"bottom"}, Valid: true, Path: "top", Positional: []string{"bottom"}},
 	{Args: []string{"third"}, Valid: true, Path: "top", Positional: []string{"third"}},
 	{Args: []string{"bottom", "mid"}, Valid: true, Path: "top", Positional: []string{"bottom", "mid"}},
 	{Args: []string{"bottom", "second"}, Valid: true, Path: "top", Positional: []string{"bottom", "second"}},
+	{Args: []string{"bottom", "-", "second"}, Valid: true, Path: "top", Positional: []string{"bottom", "-", "second"}},
 	{Args: []string{"-m", "2"}, Valid: false},
+	{Args: []string{"--midval", "2"}, Valid: false},
 	{Args: []string{"-b", "3"}, Valid: false},
+	{Args: []string{"--bottomval", "3"}, Valid: false},
+	{Args: []string{"--bogus", "4"}, Valid: false},
+	{Args: []string{"--foo"}, Valid: false},
+	{Args: []string{"--foo=bar"}, Valid: false},
+	{Args: []string{"-f"}, Valid: false},
+	{Args: []string{"-f", "bar"}, Valid: false},
+	{Args: []string{"-fbar"}, Valid: false},
 
 	// Path: top mid
 	{Args: []string{"mid"}, Valid: true, Path: "top mid", Positional: []string{}},
+	{Args: []string{"mid", "-"}, Valid: true, Path: "top mid", Positional: []string{"-"}},
 	{Args: []string{"mid", "--"}, Valid: true, Path: "top mid", Positional: []string{}},
+	{Args: []string{"mid", "-", "bottom"}, Valid: true, Path: "top mid", Positional: []string{"-", "bottom"}},
+	{Args: []string{"mid", "--", "bottom"}, Valid: true, Path: "top mid", Positional: []string{"bottom"}},
 	{Args: []string{"mid", "-t", "1"}, Valid: true, Path: "top mid", Positional: []string{}, Field: "Top", Value: 1},
+	{Args: []string{"mid", "-", "-t", "1"}, Valid: true, Path: "top mid", Positional: []string{"-"}, Field: "Top", Value: 1},
+	{Args: []string{"mid", "--", "-t", "1"}, Valid: true, Path: "top mid", Positional: []string{"-t", "1"}, Field: "Top", Value: 0},
 	{Args: []string{"-t", "1", "mid"}, Valid: true, Path: "top mid", Positional: []string{}, Field: "Top", Value: 1},
 	{Args: []string{"mid", "foo", "-t", "1"}, Valid: true, Path: "top mid", Positional: []string{"foo"}, Field: "Top", Value: 1},
 	{Args: []string{"-t", "1", "mid", "foo"}, Valid: true, Path: "top mid", Positional: []string{"foo"}, Field: "Top", Value: 1},
@@ -125,14 +145,22 @@ var commandFieldTests = []commandFieldTest{
 	{Args: []string{"mid", "--", "bottom", "-b", "3", "--"}, Valid: true, Path: "top mid", Positional: []string{"bottom", "-b", "3", "--"}},
 	{Args: []string{"mid", "--", "bottom", "--", "-b", "3"}, Valid: true, Path: "top mid", Positional: []string{"bottom", "--", "-b", "3"}},
 	{Args: []string{"-m", "2", "mid"}, Valid: false},
+	{Args: []string{"--midval", "2", "mid"}, Valid: false},
 	{Args: []string{"-m", "2", "mid", "foo"}, Valid: false},
 	{Args: []string{"-b", "3", "mid"}, Valid: false},
 	{Args: []string{"-b", "3", "mid", "foo"}, Valid: false},
 	{Args: []string{"mid", "-b", "3"}, Valid: false},
 	{Args: []string{"mid", "-b", "3", "foo"}, Valid: false},
+	{Args: []string{"mid", "--bogus", "4"}, Valid: false},
+	{Args: []string{"mid", "--foo"}, Valid: false},
+	{Args: []string{"mid", "--foo=bar"}, Valid: false},
+	{Args: []string{"mid", "-f"}, Valid: false},
+	{Args: []string{"mid", "-f", "bar"}, Valid: false},
+	{Args: []string{"mid", "-fbar"}, Valid: false},
 
 	// Path: top mid bottom
 	{Args: []string{"mid", "bottom"}, Valid: true, Path: "top mid bottom", Positional: []string{}},
+	{Args: []string{"mid", "bottom", "-"}, Valid: true, Path: "top mid bottom", Positional: []string{"-"}},
 	{Args: []string{"mid", "bottom", "--"}, Valid: true, Path: "top mid bottom", Positional: []string{}},
 	{Args: []string{"mid", "bottom", "-t", "1"}, Valid: true, Path: "top mid bottom", Positional: []string{}, Field: "Top", Value: 1},
 	{Args: []string{"mid", "-t", "1", "bottom"}, Valid: true, Path: "top mid bottom", Positional: []string{}, Field: "Top", Value: 1},
@@ -161,7 +189,9 @@ var commandFieldTests = []commandFieldTest{
 	{Args: []string{"-t", "1", "second", "third", "foo", "bar", "-b", "3"}, Valid: true, Path: "top mid bottom", Positional: []string{"foo", "bar"}, Field: "Bottom", Value: 3},
 	{Args: []string{"-t", "1", "second", "third", "foo", "bar", "-b", "3"}, Valid: true, Field: "Top", Value: 1},
 	{Args: []string{"mid", "bottom", "-b", "3", "--"}, Valid: true, Path: "top mid bottom", Positional: []string{}, Field: "Bottom", Value: 3},
+	{Args: []string{"mid", "bottom", "-", "-b", "3", "--"}, Valid: true, Path: "top mid bottom", Positional: []string{"-"}, Field: "Bottom", Value: 3},
 	{Args: []string{"mid", "bottom", "--", "-b", "3"}, Valid: true, Path: "top mid bottom", Positional: []string{"-b", "3"}, Field: "Bottom", Value: 0},
+	{Args: []string{"mid", "bottom", "-", "--", "-b", "3"}, Valid: true, Path: "top mid bottom", Positional: []string{"-", "-b", "3"}, Field: "Bottom", Value: 0},
 	{Args: []string{"mid", "-b", "3", "bottom"}, Valid: false},
 	{Args: []string{"bottom", "-b", "3"}, Valid: false},
 	{Args: []string{"-b", "3", "bottom"}, Valid: false},
@@ -198,10 +228,6 @@ func runCommandFieldTest(t *testing.T, spec *topSpec, test commandFieldTest) {
 		t.Errorf("Received unexpected error. Field: %s, Args: %q, Error: %s", test.Field, test.Args, err)
 		return
 	}
-	if test.Path != "" && path.String() != test.Path {
-		t.Errorf("Command path is incorrect. Args: %q, Expected: %s, Received: %s", test.Args, test.Path, path)
-		return
-	}
 	if test.Positional != nil && !reflect.DeepEqual(positional, test.Positional) {
 		t.Errorf("Positional args are incorrect. Args: %q, Expected: %s, Received: %s", test.Args, test.Positional, positional)
 		return
@@ -209,6 +235,27 @@ func runCommandFieldTest(t *testing.T, spec *topSpec, test commandFieldTest) {
 	if test.Field != "" && !reflect.DeepEqual(values[test.Field], test.Value) {
 		t.Errorf("Decoded value is incorrect. Field: %s, Args: %q, Expected: %#v, Received: %#v", test.Field, test.Args, test.Value, values[test.Field])
 		return
+	}
+	if path.First() != cmd {
+		t.Errorf("Expected first command in path to be top-level command, but got %s instead.", path.First().Name)
+		return
+	}
+	if test.Path != "" && path.String() != test.Path {
+		t.Errorf("Command path is incorrect. Args: %q, Expected: %s, Received: %s", test.Args, test.Path, path)
+		return
+	}
+}
+
+func TestCommandString(t *testing.T) {
+	cmd := New("top", &topSpec{})
+	if cmd.String() != "top" {
+		t.Errorf("Invalid Command.String() value.  Expected: %q, received: %q", "top", cmd.String())
+	}
+	if cmd.Subcommand("mid").String() != "mid" {
+		t.Errorf("Invalid Command.String() value.  Expected: %q, received: %q", "mid", cmd.Subcommand("mid").String())
+	}
+	if cmd.Subcommand("mid").Subcommand("bottom").String() != "bottom" {
+		t.Errorf("Invalid Command.String() value.  Expected: %q, received: %q", "bottom", cmd.Subcommand("mid").Subcommand("bottom").String())
 	}
 }
 
@@ -423,21 +470,28 @@ func TestOptionNames(t *testing.T) {
  */
 
 type flagFieldSpec struct {
-	Bool        bool `flag:"b" description:"A bool flag"`
-	Accumulator int  `flag:"a" description:"An accumulator flag"`
+	Bool        bool `flag:"b, bool" description:"A bool flag"`
+	Accumulator int  `flag:"a, acc" description:"An accumulator flag"`
 }
 
 var flagTests = []fieldTest{
 	// Bool flag
 	{Args: []string{}, Valid: true, Field: "Bool", Value: false},
 	{Args: []string{"-b"}, Valid: true, Field: "Bool", Value: true},
+	{Args: []string{"--bool"}, Valid: true, Field: "Bool", Value: true},
 	{Args: []string{"-b", "-b"}, Valid: false},
+	{Args: []string{"-b2"}, Valid: false},
+	{Args: []string{"--bool=2"}, Valid: false},
 
 	// Accumulator flag
 	{Args: []string{}, Valid: true, Field: "Accumulator", Value: 0},
 	{Args: []string{"-a"}, Valid: true, Field: "Accumulator", Value: 1},
 	{Args: []string{"-a", "-a"}, Valid: true, Field: "Accumulator", Value: 2},
 	{Args: []string{"-aaa"}, Valid: true, Field: "Accumulator", Value: 3},
+	{Args: []string{"--acc", "-a"}, Valid: true, Field: "Accumulator", Value: 2},
+	{Args: []string{"-a", "--acc", "-aa"}, Valid: true, Field: "Accumulator", Value: 4},
+	{Args: []string{"-a3"}, Valid: false},
+	{Args: []string{"--acc=3"}, Valid: false},
 }
 
 func TestFlagFields(t *testing.T) {
@@ -743,6 +797,66 @@ func validateIOFieldTest(spec *ioFieldSpec, test ioFieldTest) error {
 		}
 	}
 	return nil
+}
+
+/*
+ * Test custom flag and option decoders
+ */
+
+type customTestFlag struct {
+	val bool
+}
+
+func (d *customTestFlag) Decode(arg string) error {
+	d.val = true
+	return nil
+}
+
+type customTestOption struct {
+	val string
+}
+
+func (d *customTestOption) Decode(arg string) error {
+	if strings.HasPrefix(arg, "foo") {
+		d.val = arg
+		return nil
+	} else {
+		return fmt.Errorf("customTestOption values must begin with foo")
+	}
+}
+
+type customDecoderFieldSpec struct {
+	CustomFlag   customTestFlag   `flag:"f, flag" description:"a custom flag field"`
+	CustomOption customTestOption `option:"o, opt" description:"a custom option field"`
+}
+
+var customDecoderFieldTests = []fieldTest{
+	// Custom flag
+	{Args: []string{"-f"}, Valid: true, Field: "CustomFlag", Value: customTestFlag{val: true}},
+	{Args: []string{"--flag"}, Valid: true, Field: "CustomFlag", Value: customTestFlag{val: true}},
+	{Args: []string{"--flag", "--flag"}, Valid: false}, // Plural must be set explicitly
+	{Args: []string{"-ff"}, Valid: false},              // Plural must be set explicitly
+
+	// Custom option
+	{Args: []string{"-ofoobar"}, Valid: true, Field: "CustomOption", Value: customTestOption{val: "foobar"}},
+	{Args: []string{"-o", "foobar"}, Valid: true, Field: "CustomOption", Value: customTestOption{val: "foobar"}},
+	{Args: []string{"--opt", "foobar"}, Valid: true, Field: "CustomOption", Value: customTestOption{val: "foobar"}},
+	{Args: []string{"--opt=foobar"}, Valid: true, Field: "CustomOption", Value: customTestOption{val: "foobar"}},
+	{Args: []string{"-o", "puppies"}, Valid: false},
+	{Args: []string{"-opuppies"}, Valid: false},
+	{Args: []string{"-opt=puppies"}, Valid: false},
+	{Args: []string{"-opt", "puppies"}, Valid: false},
+	{Args: []string{"-o"}, Valid: false},
+	{Args: []string{"--opt"}, Valid: false},
+	{Args: []string{"--opt", "foobar", "-o", "foobar"}, Valid: false}, // Plural must be set explicitly
+	{Args: []string{"-ofoobar", "-ofoobar"}, Valid: false},            // Plural must be set explicitly
+}
+
+func TestCustomDecoderFields(t *testing.T) {
+	for _, test := range customDecoderFieldTests {
+		spec := &customDecoderFieldSpec{}
+		runFieldTest(t, spec, test)
+	}
 }
 
 /*
@@ -1144,6 +1258,18 @@ var invalidSpecTests = []struct {
 }{
 	// Invalid command specs
 	{
+		Description: "Commands must have a name 1",
+		Spec: &struct {
+			Command struct{} `command:","`
+		}{},
+	},
+	{
+		Description: "Commands must have a name 2",
+		Spec: &struct {
+			Command struct{} `command:" "`
+		}{},
+	},
+	{
 		Description: "Commands must have a single name",
 		Spec: &struct {
 			Command struct{} `command:"one,two"`
@@ -1212,12 +1338,32 @@ var invalidSpecTests = []struct {
 			Command2 struct{} `command:"b" alias:"foo"`
 		}{},
 	},
+	{
+		Description: "Command specs must be a pointer to struct 1",
+		Spec:        struct{}{},
+	},
+	{
+		Description: "Command specs must be a pointer to struct 2",
+		Spec:        42,
+	},
 
 	// Invalid option specs
 	{
 		Description: "Options cannot have aliases",
 		Spec: &struct {
 			Option int `option:"option" alias:"alias" description:"option with an alias"`
+		}{},
+	},
+	{
+		Description: "Options must have a name 1",
+		Spec: &struct {
+			Option int `option:"," description:"option with no name"`
+		}{},
+	},
+	{
+		Description: "Options must have a name 2",
+		Spec: &struct {
+			Option int `option:" " description:"option with no name"`
 		}{},
 	},
 	{
@@ -1289,6 +1435,18 @@ var invalidSpecTests = []struct {
 		Description: "Flags cannot have env values",
 		Spec: &struct {
 			Flag bool `flag:"flag" env:"ENV_VALUE" description:"env on flag"`
+		}{},
+	},
+	{
+		Description: "Flags must have a name 1",
+		Spec: &struct {
+			Flag bool `flag:"," description:"flag with no name"`
+		}{},
+	},
+	{
+		Description: "Flags must have a name 2",
+		Spec: &struct {
+			Flag bool `flag:" " description:"flag with no name"`
 		}{},
 	},
 	{
@@ -1395,5 +1553,75 @@ func newInvalidCommand(spec interface{}) (err error) {
 		}
 	}()
 	New("test", spec)
+	return nil
+}
+
+var invalidCommandTests = []struct {
+	Description string
+	Command     *Command
+}{
+	{
+		Description: "Command names cannot begin with -",
+		Command:     &Command{Name: "-command"},
+	},
+	{
+		Description: "Command aliases cannot begin with -",
+		Command:     &Command{Name: "command", Aliases: []string{"-alias"}},
+	},
+	{
+		Description: "Command names cannot have spaces 1",
+		Command:     &Command{Name: " command"},
+	},
+	{
+		Description: "Command names cannot have spaces 2",
+		Command:     &Command{Name: "command "},
+	},
+	{
+		Description: "Command names cannot have spaces 3",
+		Command:     &Command{Name: "command spaces"},
+	},
+	{
+		Description: "Command aliases cannot begin with -",
+		Command:     &Command{Name: "command", Aliases: []string{"-alias"}},
+	},
+	{
+		Description: "Command aliases cannot have spaces 1",
+		Command:     &Command{Name: "command", Aliases: []string{" alias"}},
+	},
+	{
+		Description: "Command aliases cannot have spaces 2",
+		Command:     &Command{Name: "command", Aliases: []string{"alias "}},
+	},
+	{
+		Description: "Command aliases cannot have spaces 3",
+		Command:     &Command{Name: "command", Aliases: []string{"alias spaces"}},
+	},
+}
+
+func TestDirectCommandValidation(t *testing.T) {
+	for _, test := range invalidCommandTests {
+		err := checkInvalidCommand(test.Command)
+		if err == nil {
+			t.Errorf("Expected error validating command, but none received.  Test: %s", test.Description)
+			continue
+		}
+	}
+}
+
+func checkInvalidCommand(cmd *Command) (err error) {
+	defer func() {
+		r := recover()
+		if r != nil {
+			switch e := r.(type) {
+			case commandError:
+				err = e
+			case optionError:
+				err = e
+			default:
+				panic(e)
+			}
+		}
+	}()
+	cmd.validate()
 	return nil
 }
