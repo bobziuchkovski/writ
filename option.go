@@ -187,7 +187,8 @@ func getDecoderFunc(kind reflect.Kind) decoderFunc {
 }
 
 // NewOptionDecoder builds an OptionDecoder for supported value types.  The val
-// parameter must be a pointer to one of the supported types.
+// parameter must be a pointer to one of the supported types, or else
+// NewOptionDecoder will panic.
 //
 // Supported types
 //
@@ -201,7 +202,7 @@ func getDecoderFunc(kind reflect.Kind) decoderFunc {
 //		io.Writer, io.WriteCloser
 //			Argument will be used to create a new file, or "-" to specify os.Stdout.
 //			If a file already exists at the path specified, it will be overwritten.
-func NewOptionDecoder(val interface{}) (decoder OptionDecoder, err error) {
+func NewOptionDecoder(val interface{}) OptionDecoder {
 	// TODO: Check for nil val?
 	// TODO: Cleanup
 	rval := reflect.ValueOf(val)
@@ -217,6 +218,7 @@ func NewOptionDecoder(val interface{}) (decoder OptionDecoder, err error) {
 	etype := elem.Type()
 	ekind := elem.Kind()
 
+	var decoder OptionDecoder
 	if etype == readerT || etype == readCloserT {
 		decoder = inputDecoder{elem}
 	} else if etype == writerT || etype == writeCloserT {
@@ -232,9 +234,9 @@ func NewOptionDecoder(val interface{}) (decoder OptionDecoder, err error) {
 		}
 	}
 	if decoder == nil {
-		err = fmt.Errorf("no option decoder available for type %s", rval.Type())
+		panicOption("no option decoder available for type %s", rval.Type())
 	}
-	return
+	return decoder
 }
 
 type basicDecoder struct {

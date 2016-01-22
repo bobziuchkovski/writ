@@ -577,11 +577,7 @@ func parseOptionField(field reflect.StructField, fieldVal reflect.Value) *Option
 		if fieldVal.Kind() == reflect.Slice || fieldVal.Kind() == reflect.Map {
 			opt.Plural = true
 		}
-		decoder, err := NewOptionDecoder(fieldVal.Addr().Interface())
-		if err != nil {
-			panicCommand("field type not valid as an option (field %s)", field.Name)
-		}
-		opt.Decoder = decoder
+		opt.Decoder = NewOptionDecoder(fieldVal.Addr().Interface())
 	}
 
 	defaultArg := field.Tag.Get(defaultTag)
