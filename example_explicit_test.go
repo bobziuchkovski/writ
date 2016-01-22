@@ -41,10 +41,8 @@ func Example_explicit() {
 			Plural:      true,
 		},
 		{
-			Names:       []string{"t", "tolerance"},
-			Description: "Set the tolerance level (from 0.0 - 1.0)",
-			Placeholder: "DECIMAL",
-			Decoder:     writ.NewOptionDecoder(&config.tolerance),
+			Names:   []string{"t", "tolerance"},
+			Decoder: writ.NewOptionDecoder(&config.tolerance),
 		},
 	}
 
