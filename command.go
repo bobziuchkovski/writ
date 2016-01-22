@@ -107,6 +107,7 @@ type Command struct {
 	Description string
 }
 
+// String returns the command's name
 func (c *Command) String() string {
 	return c.Name
 }
