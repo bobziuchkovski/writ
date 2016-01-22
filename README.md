@@ -3,24 +3,34 @@
 [![Coverage](http://gocover.io/_badge/github.com/ziuchkovski/writ?0)](http://gocover.io/github.com/ziuchkovski/writ)
 [![GoDoc](https://godoc.org/github.com/ziuchkovski/writ?status.svg)](https://godoc.org/github.com/ziuchkovski/writ)
 
-Writ
-====
+# Writ
 
-Overview
---------
+## Overview
 
 Writ implements command line decoding according to [GNU getopt_long conventions](http://www.gnu.org/software/libc/manual/html_node/Argument-Syntax.html).  All long and short-form option variations are supported: `--with-x`, `--name Sam`, `--day=Friday`, `-i FILE`, `-vvv`, etc.
 
 Additionally, writ supports subcommands, customizable help output generation, and default values. However, writ is purely a decoder package. Command dispatch and execution are intentionally omitted.
 
-Usage
------
+Commands and options may be defined either implicitly via struct tags, or explicitly via direct writ.Command{} and writ.Option{} creation.
 
-The following example is copied from writ's package documentation.  Please read the [godocs](https://godoc.org/github.com/ziuchkovski/writ) for additional information.
+## Current version
 
+0.8.0
+
+## Stability and API Promise
+
+Writ is new but stable.  It has extensive test coverage for command and option parsing.  Help tests are coming soon.
+
+The API is mostly established, but might change in minor breaking ways prior to the 1.0 release.  Any API changes after 1.0 are guaranteed to remain backwards compatible.  This is similar to the Go language promise.
+
+## Usage
+
+The following examples are copied from writ's package documentation.  Please read the [godocs](https://godoc.org/github.com/ziuchkovski/writ) for additional information.
+
+### Basic Use
 
 ```golang
-package writ_test
+package main
 
 import (
     "fmt"
@@ -35,7 +45,7 @@ type Greeter struct {
     Name      string `option:"n, name" default:"Everyone" description:"the person to greet"`
 }
 
-func Example_basic() {
+func main() {
     // First, the Greeter is parsed into a *Command by writ.New()
     greeter := &Greeter{}
     cmd := writ.New("greeter", greeter)
@@ -59,14 +69,163 @@ func Example_basic() {
 }
 ```
 
+### Convenience Features
 
-Authors
--------
+```golang
+package main
+
+import (
+    "bufio"
+    "errors"
+    "fmt"
+    "github.com/ziuchkovski/writ"
+    "io"
+    "os"
+    "strings"
+)
+
+// This example demonstrates some of the convenience features offered by writ
+// It replaces user-specified words in an input file and writes the results to
+// an output file.  By default, the input is read from os.Stdin and written to
+// os.Stdout.
+type ReplacerCmd struct {
+    Input        io.Reader         `option:"i" description:"Read input values from FILE (default: stdin)" default:"-" placeholder:"FILE"`
+    Output       io.WriteCloser    `option:"o" description:"Write rendered output to FILE (default: stdout)" default:"-" placeholder:"FILE"`
+    Replacements map[string]string `option:"r, replace" description:"Replace occurrences of ORIG with NEW" placeholder:"ORIG=NEW"`
+    HelpFlag     bool              `flag:"h, help" description:"Display this help text and exit"`
+}
+
+func (r ReplacerCmd) Replace() error {
+    var pairs []string
+    for k, v := range r.Replacements {
+        pairs = append(pairs, k, v)
+    }
+    replacer := strings.NewReplacer(pairs...)
+    scanner := bufio.NewScanner(r.Input)
+    for scanner.Scan() {
+        line := scanner.Text()
+        _, err := io.WriteString(r.Output, replacer.Replace(line)+"\n")
+        if err != nil {
+            return err
+        }
+    }
+    err := scanner.Err()
+    if err != nil {
+        return err
+    }
+    return r.Output.Close()
+}
+
+func main() {
+    // Construct the command
+    replacer := &ReplacerCmd{}
+    cmd := writ.New("replacer", replacer)
+    cmd.Help.Usage = "Usage: replacer [OPTION]..."
+    cmd.Help.Header = "Perform text replacement according to the -r/--replace option"
+    cmd.Help.Footer = "By default, replacer reads from stdin and write to stdout.  Use the -i and -o options to override."
+
+    // Decode input arguments
+    _, positional, err := cmd.Decode(os.Args[1:])
+    if err != nil || replacer.HelpFlag {
+        cmd.ExitHelp(err)
+    }
+    if len(positional) > 0 {
+        cmd.ExitHelp(errors.New("replacer does not accept positional arguments"))
+    }
+
+    // At this point, the ReplacerCmd's Input, Output, and Replacements fields are all
+    // known-valid, so we can run the replacement.
+    err = replacer.Replace()
+    if err != nil {
+        fmt.Fprintf(os.Stderr, "Error: %s\n", err)
+        os.Exit(1)
+    }
+}
+```
+
+### Explicit Commands and Options
+
+```golang
+package main
+
+import (
+    "github.com/ziuchkovski/writ"
+    "os"
+    "runtime"
+)
+
+type Config struct {
+    help      bool
+    verbosity int
+
+    // A hidden flag
+    tolerance float32
+
+    // A dynamically added option for Mac OS
+    useQuartz bool
+}
+
+// This example demonstrates explicit Command and Option construction
+// without the use of writ.New()
+func main() {
+    config := &Config{}
+    cmd := &writ.Command{Name: "explicit"}
+    cmd.Options = []*writ.Option{
+        &writ.Option{
+            Names:       []string{"h", "help"},
+            Description: "Display this help text and exit",
+            Decoder:     writ.NewFlagDecoder(&config.help),
+            Flag:        true,
+        },
+        &writ.Option{
+            Names:       []string{"v"},
+            Description: "Increase verbosity; may be specified more than once",
+            Decoder:     writ.NewFlagAccumulator(&config.verbosity),
+            Flag:        true,
+            Plural:      true,
+        },
+        &writ.Option{
+            Names:       []string{"t", "tolerance"},
+            Description: "Set the tolerance level (from 0.0 - 1.0)",
+            Placeholder: "DECIMAL",
+            Decoder:     writ.NewOptionDecoder(&config.tolerance),
+        },
+    }
+
+    cmd.Help = writ.Help{
+        Usage:  "Usage: explicit [OPTION]...",
+        Header: "Explicit demonstrates explicit commands and options",
+        Footer: "This method is flexible but more verbose than using writ.New()",
+    }
+    general := cmd.GroupOptions("help", "v")
+    general.Header = "General Options:"
+    cmd.Help.OptionGroups = append(cmd.Help.OptionGroups, general)
+
+    if runtime.GOOS == "darwin" {
+        cmd.Options = append(cmd.Options, &writ.Option{
+            Names:       []string{"use-quartz"},
+            Description: "Use Quartz display on Mac",
+            Decoder:     writ.NewFlagDecoder(&config.useQuartz),
+            Flag:        true,
+        })
+        platform := cmd.GroupOptions("use-quartz")
+        platform.Header = "Platform Options:"
+        cmd.Help.OptionGroups = append(cmd.Help.OptionGroups, platform)
+    }
+
+    // Decode the options
+    _, _, err := cmd.Decode(os.Args[1:])
+    if err != nil || config.help {
+        cmd.ExitHelp(err)
+    }
+}
+```
+
+## Authors
 
 Bob Ziuchkovski (@ziuchkovski)
 
-License (MIT)
--------------
+## License (MIT)
 
 Copyright (c) 2016 Bob Ziuchkovski
 
