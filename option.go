@@ -54,7 +54,7 @@ func panicOption(format string, values ...interface{}) {
 	panic(e)
 }
 
-// Options are used to specify program options and flags.  Options are
+// Option is used to specify program options and flags.  Options are
 // created implicitly when New() parses a command spec.  They may also be
 // created directly if added flexibility or runtime dynamism is required.
 type Option struct {
@@ -121,8 +121,9 @@ func (o *Option) validate() {
 	}
 }
 
-// Every Option has an associated OptionDecoder that is responsible for decoding its arguments.
-// For flags, Decode is called with an empty string.
+// OptionDecoder is the interface used for decoding Option arguments.
+// Every Option must have an OptionDecoder assigned.  New() constructs
+// and assigns OptionDecoders automatically for supported field types.
 type OptionDecoder interface {
 	Decode(arg string) error
 }
@@ -185,8 +186,8 @@ func getDecoderFunc(kind reflect.Kind) decoderFunc {
 	}
 }
 
-// Construct an OptionDecoder for a supported type.  The val parameter must
-// be a pointer to a value of that type.
+// NewOptionDecoder builds an OptionDecoder for supported value types.  The val
+// parameter must be a pointer to one of the supported types.
 //
 // Supported types
 //
@@ -313,7 +314,7 @@ func (d flagAccumulator) Decode(arg string) error {
 	return nil
 }
 
-// Constructs an OptionDecoder for boolean flag values.  The boolean
+// NewFlagDecoder builds an OptionDecoder for boolean flag values.  The boolean
 // value is set when the option is decoded.
 func NewFlagDecoder(val *bool) OptionDecoder {
 	if val == nil {
@@ -331,8 +332,8 @@ func (d flagDecoder) Decode(arg string) error {
 	return nil
 }
 
-// Constructs an OptionDecoder for int flag values.  The int value is
-// incremented every time the option is decoded.
+// NewFlagAccumulator builds an OptionDecoder for int flag values.  The int value
+// is incremented every time the option is decoded.
 func NewFlagAccumulator(val *int) OptionDecoder {
 	return flagAccumulator{val}
 }
@@ -341,13 +342,14 @@ type flagAccumulator struct {
 	value *int
 }
 
-// If an OptionDecoder also implements the OptionDefaulter interface,
-// its SetDefault() method is called prior to decoding options.
+// OptionDefaulter is used to initialize default option values.  If an
+// OptionDecoder implemented the OptionDefaulter interface, its SetDefault()
+// method is called prior to decoding options.
 type OptionDefaulter interface {
 	SetDefault()
 }
 
-// Constructs a new OptionDecoder that implements the OptionDefaulter
+// NewDefaulter builds an OptionDecoder that implements the OptionDefaulter
 // interface.  The value for defaultArg is supplied to the underlying
 // OptionDecoder's Decode() method when SetDefault() is called.
 // If the value fails to decode, the OptionDefaulter will panic.
@@ -368,7 +370,7 @@ func (d defaulter) SetDefault() {
 	}
 }
 
-// Constructs a new OptionDecoder that implements the OptionDefaulter
+// NewEnvDefaulter builds an OptionDecoder that implements the OptionDefaulter
 // interface.  The key's value is used to specify an environment variable.
 // If the environment variable is set, the value is supplied to the underlying
 // OptionDecoder's Decode() method when SetDefault() is called.s

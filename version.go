@@ -20,6 +20,7 @@
 
 package writ
 
+// Version records the writ package version
 var Version = struct {
 	Major int
 	Minor int

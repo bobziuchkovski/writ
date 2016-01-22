@@ -28,12 +28,13 @@ import (
 
 var defaultTemplate = template.Must(template.New("Help").Funcs(templateFuncs).Parse(HelpText))
 
+// HelpText is used by Command.WriteHelp() and Command.ExitHelp() to generate
+// help content.
+//
+// This copy of the template is used when compiling with go < 1.6.
+// It's a bit ugly due to the lack of whitespace control with Go < 1.6.
+// See template.go for the go1.6+ help template.
 const HelpText = `{{/*
-
-This template is used when compiling with go < 1.6.
-It's a bit ugly due to the lack of whitespace control with Go < 1.6.
-See template.go for the go1.6+ help template.
-
 */}}{{template "Main" .}}{{/*
 
 */}}{{define "Main"}}{{/*

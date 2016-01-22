@@ -57,10 +57,12 @@ func (p Path) String() string {
 	return strings.Join(parts, " ")
 }
 
+// First returns the first command of the path.  This is the top-level/root command.
 func (p Path) First() *Command {
 	return p[0]
 }
 
+// Last returns the last command of the path.  This is the user-selected command.
 func (p Path) Last() *Command {
 	return p[len(p)-1]
 }
@@ -76,7 +78,7 @@ func (p Path) findOption(name string) *Option {
 	return nil
 }
 
-// The New() function reads the input spec, searching for fields tagged
+// New reads the input spec argument, searching for fields tagged
 // with "option", "flag", or "command".  The field type and tags are used to
 // construct a corresponding Command instance, which can be used to decode
 // program arguments.  See the package overview documentation for details.
@@ -88,7 +90,7 @@ func New(name string, spec interface{}) *Command {
 	return cmd
 }
 
-// Commands are used to specify program options and subcommands.  Commands
+// Command is used to specify program options and subcommands.  Commands
 // are generally constructed with New() but can be created directly if added
 // flexibility or runtime dynamism is required.
 type Command struct {
@@ -343,9 +345,8 @@ func parseArgs(c *Command, args []string) (path Path, positional []string, err e
 func processOption(path Path, args []string, optidx int) (opt *Option, newargs []string, err error) {
 	if strings.HasPrefix(args[optidx], "--") {
 		return processLongOption(path, args, optidx)
-	} else {
-		return processShortOption(path, args, optidx)
 	}
+	return processShortOption(path, args, optidx)
 }
 
 func processLongOption(path Path, args []string, optidx int) (opt *Option, newargs []string, err error) {
@@ -440,9 +441,9 @@ var (
 	optionTag      = "option"
 	placeholderTag = "placeholder"
 	invalidTags    = map[string][]string{
-		commandTag: []string{defaultTag, envTag, flagTag, optionTag, placeholderTag},
-		flagTag:    []string{aliasTag, commandTag, defaultTag, envTag, optionTag, placeholderTag},
-		optionTag:  []string{aliasTag, commandTag, flagTag},
+		commandTag: {defaultTag, envTag, flagTag, optionTag, placeholderTag},
+		flagTag:    {aliasTag, commandTag, defaultTag, envTag, optionTag, placeholderTag},
+		optionTag:  {aliasTag, commandTag, flagTag},
 	}
 )
 
@@ -478,12 +479,12 @@ func parseCommandSpec(name string, spec interface{}, path Path) *Command {
 
 	if len(cmd.Options) > 0 {
 		cmd.Help.OptionGroups = []OptionGroup{
-			OptionGroup{Options: cmd.Options, Header: "Available Options:"},
+			{Options: cmd.Options, Header: "Available Options:"},
 		}
 	}
 	if len(cmd.Subcommands) > 0 {
 		cmd.Help.CommandGroups = []CommandGroup{
-			CommandGroup{Commands: cmd.Subcommands, Header: "Available Commands:"},
+			{Commands: cmd.Subcommands, Header: "Available Commands:"},
 		}
 	}
 	cmd.Help.Usage = fmt.Sprintf("Usage: %s [OPTION]... [ARG]...", path.String())

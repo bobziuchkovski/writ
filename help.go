@@ -57,8 +57,8 @@ type Help struct {
 	Footer   string             // Optional message displayed at the end of output.
 }
 
-// OptionGroups are used to customize help output.  They group related
-// Options and support added Header and Footer sections for notes.
+// OptionGroup is used to customize help output.  It groups related
+// Options for output by Command.WriteHelp() and Command.ExitHelp().
 // When New() parses an input spec, it creates a single OptionGroup for all
 // parsed options.
 type OptionGroup struct {
@@ -70,8 +70,8 @@ type OptionGroup struct {
 	Footer string // Optional message displayed after the group
 }
 
-// CommandGroups are used to customize help output.  They group related
-// Commands and support added Header and Footer sections for notes.
+// CommandGroup is used to customize help output.  It groups related
+// Commands for output by Command.WriteHelp() and Command.ExitHelp().
 // When New() parses an input spec, it creates a single CommandGroup for all
 // parsed Subcommands.
 type CommandGroup struct {
