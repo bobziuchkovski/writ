@@ -104,7 +104,7 @@ type Command struct {
 
 	// Optional; used for help output only
 	Help        Help
-	Description string
+	Description string // Commands without descriptions are hidden from help output
 }
 
 // String returns the command's name
@@ -492,14 +492,26 @@ func parseCommandSpec(name string, spec interface{}, path Path) *Command {
 		}
 	}
 
-	if len(cmd.Options) > 0 {
-		cmd.Help.OptionGroups = []OptionGroup{
-			{Options: cmd.Options, Header: "Available Options:"},
+	var visibleOpts []*Option
+	for _, opt := range cmd.Options {
+		if opt.Description != "" {
+			visibleOpts = append(visibleOpts, opt)
 		}
 	}
-	if len(cmd.Subcommands) > 0 {
+	if len(visibleOpts) > 0 {
+		cmd.Help.OptionGroups = []OptionGroup{
+			{Options: visibleOpts, Header: "Available Options:"},
+		}
+	}
+	var visibleSubs []*Command
+	for _, sub := range cmd.Subcommands {
+		if sub.Description != "" {
+			visibleSubs = append(visibleSubs, sub)
+		}
+	}
+	if len(visibleSubs) > 0 {
 		cmd.Help.CommandGroups = []CommandGroup{
-			{Commands: cmd.Subcommands, Header: "Available Commands:"},
+			{Commands: visibleSubs, Header: "Available Commands:"},
 		}
 	}
 	cmd.Help.Usage = fmt.Sprintf("Usage: %s [OPTION]... [ARG]...", path.String())

@@ -68,7 +68,7 @@ type Option struct {
 	Plural bool // If Plural is set, the Option may be specified multiple times
 
 	// Optional; used for help output only
-	Description string
+	Description string // Options without descriptions are hidden from help output
 	Placeholder string
 }
 

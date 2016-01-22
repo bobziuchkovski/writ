@@ -32,7 +32,7 @@ var helpFormattingTests = []struct {
 	Rendered    string
 }{
 	{
-		Description: "Basic output 1",
+		Description: "A single option",
 		Spec: &struct {
 			Flag bool `flag:"h, help" description:"Display this text and exit"`
 		}{},
@@ -44,7 +44,7 @@ Available Options:
 	},
 
 	{
-		Description: "Basic output 2",
+		Description: "A couple options",
 		Spec: &struct {
 			Flag   bool `flag:"h" description:"Display this text and exit"`
 			Option int  `option:"i, int" description:"An int option" placeholder:"INT"`
@@ -58,7 +58,7 @@ Available Options:
 	},
 
 	{
-		Description: "Basic output 3",
+		Description: "An option with short-form placeholder",
 		Spec: &struct {
 			Option int `option:"i" description:"An int option" placeholder:"INT"`
 		}{},
@@ -70,7 +70,7 @@ Available Options:
 	},
 
 	{
-		Description: "Basic output 4",
+		Description: "A single command",
 		Spec: &struct {
 			Command struct{} `command:"command" description:"A command"`
 		}{},
@@ -82,7 +82,7 @@ Available Commands:
 	},
 
 	{
-		Description: "Basic output 5",
+		Description: "A single option and single command",
 		Spec: &struct {
 			Option  int      `option:"i" description:"An int option" placeholder:"INT"`
 			Command struct{} `command:"command" description:"A command"`
@@ -108,6 +108,32 @@ Available Options:
   --opt=ARG                 An option with a reeeeeeeeeeeeeeeeeeeeeeeeeeeeeaaaaa
                             aaaaallllllyyyyy loooooooooooooooonnnnnnngggggg desc
                             ription
+`,
+	},
+
+	{
+		Description: "Hidden option",
+		Spec: &struct {
+			Hidden int  `option:"hidden"`
+			Flag   bool `flag:"h, help" description:"Display this text and exit"`
+		}{},
+		Rendered: `Usage: test [OPTION]... [ARG]...
+
+Available Options:
+  -h, --help                Display this text and exit
+`,
+	},
+
+	{
+		Description: "Hidden command",
+		Spec: &struct {
+			Command struct{} `command:"command" description:"A command"`
+			Hidden  struct{} `command:"hidden"`
+		}{},
+		Rendered: `Usage: test [OPTION]... [ARG]...
+
+Available Commands:
+  command                   A command
 `,
 	},
 }

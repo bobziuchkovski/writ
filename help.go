@@ -60,7 +60,7 @@ type Help struct {
 // OptionGroup is used to customize help output.  It groups related
 // Options for output by Command.WriteHelp() and Command.ExitHelp().
 // When New() parses an input spec, it creates a single OptionGroup for all
-// parsed options.
+// parsed options that have non-empty descriptions.
 type OptionGroup struct {
 	Options []*Option
 
@@ -73,7 +73,7 @@ type OptionGroup struct {
 // CommandGroup is used to customize help output.  It groups related
 // Commands for output by Command.WriteHelp() and Command.ExitHelp().
 // When New() parses an input spec, it creates a single CommandGroup for all
-// parsed Subcommands.
+// parsed Subcommands that have non-empty descriptions.
 type CommandGroup struct {
 	Commands []*Command
 
