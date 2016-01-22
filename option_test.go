@@ -45,6 +45,10 @@ var invalidOptionTests = []struct {
 		Option:      &Option{Names: []string{}, Decoder: noopDecoder{}},
 	},
 	{
+		Description: "Option names cannot be blank",
+		Option:      &Option{Names: []string{""}, Decoder: noopDecoder{}},
+	},
+	{
 		Description: "Option names cannot begin with -",
 		Option:      &Option{Names: []string{"-option"}, Decoder: noopDecoder{}},
 	},

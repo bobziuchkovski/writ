@@ -302,7 +302,7 @@ func TestSpecPlaceholders(t *testing.T) {
 type defaultFieldSpec struct {
 	Default        int `option:"d" description:"An int field with a default" default:"42"`
 	EnvDefault     int `option:"e" description:"An int field with an environment default" env:"ENV_DEFAULT"`
-	StackedDefault int `option:"s" description:"An int dield with both a default and environment default" default:"84" env:"STACKED_DEFAULT"`
+	StackedDefault int `option:"s" description:"An int field with both a default and environment default" default:"84" env:"STACKED_DEFAULT"`
 }
 
 type defaultFieldTest struct {
@@ -375,6 +375,28 @@ func runDefaultFieldTest(t *testing.T, spec interface{}, test defaultFieldTest) 
 		t.Errorf("Decoded value is incorrect. Field: %s, Args: %q, Expected: %#v, Received: %#v", test.Field, test.Args, test.Value, fieldval)
 		return
 	}
+}
+
+func TestBogusDefaultField(t *testing.T) {
+	var spec = &struct {
+		BogusDefault int `option:"b" description:"An int field with a bogus default" default:"bogus"`
+	}{}
+
+	defer func() {
+		r := recover()
+		if r != nil {
+			switch r.(type) {
+			case commandError, optionError:
+				// Intentional No-op
+			default:
+				panic(r)
+			}
+		}
+	}()
+
+	cmd := New("test", spec)
+	cmd.Decode([]string{})
+	t.Errorf("Expected decoding to panic on bogus default value, but this didn't happen.")
 }
 
 /*
@@ -554,6 +576,10 @@ var mapSliceFieldTests = []fieldTest{
 	{Args: []string{"-m", "a=b", "-m", "a=c"}, Valid: true, Field: "StringMap", Value: map[string]string{"a": "c"}},
 	{Args: []string{"-m", "a=b", "-m", "c=d"}, Valid: true, Field: "StringMap", Value: map[string]string{"a": "b", "c": "d"}},
 	{Args: []string{"-m", "日=本", "-m", "-日=本", "-m", "--日=--本"}, Valid: true, Field: "StringMap", Value: map[string]string{"日": "本", "-日": "本", "--日": "--本"}},
+	{Args: []string{"-m", "a", "=b"}, Valid: false},
+	{Args: []string{"-m", "a", "b"}, Valid: false},
+	{Args: []string{"-m", "foo"}, Valid: false},
+	{Args: []string{"-m", "a:b"}, Valid: false},
 	{Args: []string{"-m"}, Valid: false},
 }
 
@@ -1451,6 +1477,12 @@ var invalidSpecTests = []struct {
 			Option int  `option:"foo"`
 		}{},
 	},
+	{
+		Description: "Not a supported option type",
+		Spec: &struct {
+			Option map[string]int `option:"foo"`
+		}{},
+	},
 
 	// Invalid flag specs
 	{
@@ -1685,5 +1717,107 @@ func checkInvalidCommand(cmd *Command) (err error) {
 		}
 	}()
 	cmd.validate()
+	return nil
+}
+
+func TestGroupCommands(t *testing.T) {
+	spec := &struct {
+		Command1 struct{} `command:"command1"`
+		Command2 struct{} `command:"command2"`
+	}{}
+	cmd := New("test", spec)
+
+	group := cmd.GroupCommands("command1")
+	if len(group.Commands) != 1 || group.Commands[0].Name != "command1" {
+		t.Errorf("Expected a single command group with command %q", "command1")
+	}
+	group = cmd.GroupCommands("command2")
+	if len(group.Commands) != 1 || group.Commands[0].Name != "command2" {
+		t.Errorf("Expected a single command group with command %q", "command2")
+	}
+	group = cmd.GroupCommands("command1", "command2")
+	if len(group.Commands) != 2 || group.Commands[0].Name != "command1" || group.Commands[1].Name != "command2" {
+		t.Errorf("Expected a single command group with commands %q and %q", "command1", "command2")
+	}
+	group = cmd.GroupCommands("command2", "command1")
+	if len(group.Commands) != 2 || group.Commands[0].Name != "command2" || group.Commands[1].Name != "command1" {
+		t.Errorf("Expected a single command group with commands %q and %q", "command2", "command1")
+	}
+	err := checkInvalidCommandGroup(cmd, "command3")
+	if err == nil {
+		t.Errorf("Expected an error to occur grouping an unknown command, but none encountered.")
+	}
+	err = checkInvalidCommandGroup(cmd, "command1", "command3")
+	if err == nil {
+		t.Errorf("Expected an error to occur grouping an unknown command, but none encountered.")
+	}
+}
+
+func checkInvalidCommandGroup(cmd *Command, name ...string) (err error) {
+	defer func() {
+		r := recover()
+		if r != nil {
+			switch e := r.(type) {
+			case commandError:
+				err = e
+			case optionError:
+				err = e
+			default:
+				panic(e)
+			}
+		}
+	}()
+	cmd.GroupCommands(name...)
+	return nil
+}
+
+func TestGroupOptions(t *testing.T) {
+	spec := &struct {
+		Option1 int `option:"option1"`
+		Option2 int `option:"option2"`
+	}{}
+	cmd := New("test", spec)
+
+	group := cmd.GroupOptions("option1")
+	if len(group.Options) != 1 || group.Options[0].Names[0] != "option1" {
+		t.Errorf("Expected a single option group with option %q", "option1")
+	}
+	group = cmd.GroupOptions("option2")
+	if len(group.Options) != 1 || group.Options[0].Names[0] != "option2" {
+		t.Errorf("Expected a single option group with option %q", "option2")
+	}
+	group = cmd.GroupOptions("option1", "option2")
+	if len(group.Options) != 2 || group.Options[0].Names[0] != "option1" || group.Options[1].Names[0] != "option2" {
+		t.Errorf("Expected a single option group with options %q and %q", "option1", "option2")
+	}
+	group = cmd.GroupOptions("option2", "option1")
+	if len(group.Options) != 2 || group.Options[0].Names[0] != "option2" || group.Options[1].Names[0] != "option1" {
+		t.Errorf("Expected a single option group with options %q and %q", "option2", "option1")
+	}
+	err := checkInvalidOptionGroup(cmd, "option3")
+	if err == nil {
+		t.Errorf("Expected an error to occur grouping an unknown option, but none encountered.")
+	}
+	err = checkInvalidOptionGroup(cmd, "option1", "option3")
+	if err == nil {
+		t.Errorf("Expected an error to occur grouping an unknown option, but none encountered.")
+	}
+}
+
+func checkInvalidOptionGroup(cmd *Command, name ...string) (err error) {
+	defer func() {
+		r := recover()
+		if r != nil {
+			switch e := r.(type) {
+			case commandError:
+				err = e
+			case optionError:
+				err = e
+			default:
+				panic(e)
+			}
+		}
+	}()
+	cmd.GroupOptions(name...)
 	return nil
 }
