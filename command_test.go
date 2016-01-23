@@ -1844,3 +1844,14 @@ func checkInvalidOptionGroup(cmd *Command, name ...string) (err error) {
 	cmd.GroupOptions(name...)
 	return nil
 }
+
+/*
+ * Misc coverage tests to ensure code doesn't panic/blow-up
+ */
+
+func TestCommandError(t *testing.T) {
+	err := commandError{fmt.Errorf("test")}
+	if err.Error() != "test" {
+		t.Errorf("Expected commandError to return underlying error string.  Expected: %q, Received: %q", "test", err.Error())
+	}
+}

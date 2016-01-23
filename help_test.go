@@ -22,6 +22,7 @@ package writ
 
 import (
 	"bytes"
+	"io/ioutil"
 	"testing"
 	"text/template"
 )
@@ -54,6 +55,18 @@ Available Options:
 Available Options:
   -h                        Display this text and exit
   -i, --int=INT             An int option
+`,
+	},
+
+	{
+		Description: "Multiple long and short names for an option",
+		Spec: &struct {
+			Option int `option:"i, I, int, Int" description:"An int option" placeholder:"INT"`
+		}{},
+		Rendered: `Usage: test [OPTION]... [ARG]...
+
+Available Options:
+  -i, -I, --int, --Int=INT  An int option
 `,
 	},
 
@@ -169,4 +182,25 @@ func TestCustomHelpTemplate(t *testing.T) {
 		t.Errorf("Custom help output invalid.  Expected: %q, Received: %q", templateText, buf.String())
 		return
 	}
+}
+
+func TestInvalidHelpTemplate(t *testing.T) {
+	templateText := "{{.Bogus}}"
+	tpl := template.Must(template.New("Help").Parse(templateText))
+	cmd := New("test", &struct{}{})
+	cmd.Help.Template = tpl
+
+	defer func() {
+		r := recover()
+		if r != nil {
+			switch r.(type) {
+			case commandError, optionError:
+				// Intentionally blank
+			default:
+				panic(r)
+			}
+		}
+	}()
+	cmd.WriteHelp(ioutil.Discard)
+	t.Errorf("Expected cmd.WriteHelp() to panic on invalid template, but this didn't happen")
 }

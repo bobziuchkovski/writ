@@ -21,6 +21,7 @@
 package writ
 
 import (
+	"fmt"
 	"testing"
 )
 
@@ -96,4 +97,75 @@ func checkInvalidOption(opt *Option) (err error) {
 	}()
 	opt.validate()
 	return nil
+}
+
+func TestNilNewOptionDecoder(t *testing.T) {
+	var nilptr *bool
+	defer func() {
+		r := recover()
+		if r != nil {
+			switch r.(type) {
+			case commandError, optionError:
+				// Intentionally blank
+			default:
+				panic(r)
+			}
+		}
+	}()
+	NewOptionDecoder(nilptr)
+	t.Errorf("Expected NewOptionDecoder to panic on nil value, but this didn't happen")
+}
+
+func TestNonPointerNewOptionDecoder(t *testing.T) {
+	val := true
+	defer func() {
+		r := recover()
+		if r != nil {
+			switch r.(type) {
+			case commandError, optionError:
+				// Intentionally blank
+			default:
+				panic(r)
+			}
+		}
+	}()
+	NewOptionDecoder(val)
+	t.Errorf("Expected NewOptionDecoder to panic on non-pointer type, but this didn't happen")
+}
+
+func TestNilNewFlagDecoder(t *testing.T) {
+	var nilptr *bool
+	defer func() {
+		r := recover()
+		if r != nil {
+			switch r.(type) {
+			case commandError, optionError:
+				// Intentionally blank
+			default:
+				panic(r)
+			}
+		}
+	}()
+	NewFlagDecoder(nilptr)
+	t.Errorf("Expected NewFlagDecoder to panic on nil value, but this didn't happen")
+}
+
+/*
+ * Misc coverage tests to ensure code doesn't panic
+ */
+
+func TestOptionError(t *testing.T) {
+	err := optionError{fmt.Errorf("test")}
+	if err.Error() != "test" {
+		t.Errorf("Expected optionError to return underlying error string.  Expected: %q, Received: %q", "test", err.Error())
+	}
+}
+
+// Ensure Option.String() doesn't panic.  We make no gaurantee
+// on the output formatting.
+func TestOptionString(t *testing.T) {
+	opt := &Option{Names: []string{"o", "O", "opt", "Opt"}}
+	if opt.String() == "" {
+		t.Errorf("Option.String() returned an empty string")
+	}
 }
