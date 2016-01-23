@@ -7,29 +7,18 @@
 
 ## Overview
 
-Writ is a flexible option parser with thorough test coverage.  It's meant to "just work" and stay out of the way.
+Writ is a flexible option parser with thorough test coverage.  It's meant to be simple and "just work".
 
-Writ implements command line decoding according to [GNU getopt_long conventions](http://www.gnu.org/software/libc/manual/html_node/Argument-Syntax.html).  All long and short-form option variations are supported: `--with-x`, `--name Sam`, `--day=Friday`, `-i FILE`, `-vvv`, etc.
+Package writ implements option decoding with GNU getopt_long conventions. All long and short-form option variations are
+supported: `--with-x`, `--name Sam`, `--day=Friday`, `-i FILE`, `-vvv`, etc.
 
-Additionally, writ supports subcommands, customizable help output generation, and default values. However, writ is purely a decoder package. Command dispatch and execution are intentionally omitted.
+## API Promise
 
-Commands and options may be defined either implicitly via struct tags, or explicitly via direct writ.Command{} and writ.Option{} creation.
+Minor breaking changes may occur prior to the 1.0 release.  After 1.0 release, the API is guaranteed to remain backwards compatible.
 
-## Current version
+## Basic Use
 
-0.8.4
-
-## Stability and API Promise
-
-Writ is new but stable.  It has thorough test coverage, particularly for command and option parsing.
-
-The API is mostly established, but might change in minor breaking ways prior to the 1.0 release.  Any API changes after 1.0 are guaranteed to remain backwards compatible.  This is similar to the Go language promise.
-
-## Usage
-
-The following examples are copied from writ's package documentation.  Please read the [godocs](https://godoc.org/github.com/ziuchkovski/writ) for additional information.
-
-### Basic Use
+Please see the [godocs](https://godoc.org/github.com/ziuchkovski/writ) for additional information.
 
 ```go
 package main
@@ -74,6 +63,8 @@ func main() {
 ```
 
 ### Explicit Commands and Options
+
+Please see the [godocs](https://godoc.org/github.com/ziuchkovski/writ) for additional information.
 
 ```go
 package main
