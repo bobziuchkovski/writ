@@ -368,14 +368,12 @@ func (d defaulter) SetDefault() {
 }
 
 // NewEnvDefaulter builds an OptionDecoder that implements OptionDefaulter.
-// The key's value is used to specify an environment variable.  If the
-// environment variable is set, the value is supplied to the underlying
-// OptionDecoder's Decode() method when SetDefault() is called.
-// If the environment variable isn't set or fails to decode, the underlying
-// OptionDecoder's SetDefault() method will be invoked (if the Decoder
-// implements the OptionDefaulter interface).  Otherwise, no action is taken.
-func NewEnvDefaulter(d OptionDecoder, key string) OptionDecoder {
-	return envDefaulter{d, key}
+// SetDefault calls decoder.Decode() with the value of the environment
+// variable named by key.  If the environment variable isn't set or fails to
+// decode, SetDefault checks if decoder implements OptionDefault.  If so,
+// SetDefault calls decoder.SetDefault().  Otherwise, no action is taken.
+func NewEnvDefaulter(decoder OptionDecoder, key string) OptionDecoder {
+	return envDefaulter{decoder, key}
 }
 
 type envDefaulter struct {
