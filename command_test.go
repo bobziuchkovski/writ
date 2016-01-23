@@ -878,9 +878,8 @@ func (d customTestOption) Decode(arg string) error {
 	if strings.HasPrefix(arg, "foo") {
 		*d.val = arg
 		return nil
-	} else {
-		return fmt.Errorf("customTestOption values must begin with foo")
 	}
+	return fmt.Errorf("customTestOption values must begin with foo")
 }
 
 type customTestOptionPtr struct {
@@ -891,9 +890,8 @@ func (d *customTestOptionPtr) Decode(arg string) error {
 	if strings.HasPrefix(arg, "foo") {
 		d.val = arg
 		return nil
-	} else {
-		return fmt.Errorf("customTestOptionPtr values must begin with foo")
 	}
+	return fmt.Errorf("customTestOptionPtr values must begin with foo")
 }
 
 type customDecoderFieldSpec struct {

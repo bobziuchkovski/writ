@@ -7,7 +7,7 @@
 ## 0.8.3 (2016-01-22)
 
 - Misc: Minor code cleanup
-- Tests: Add basic test coerage for help output
+- Tests: Add basic test coverage for help output
 - Tests: Add additional test coverage for comamnds and options
 
 ## 0.8.2 (2016-01-22)

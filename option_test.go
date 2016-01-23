@@ -161,7 +161,7 @@ func TestOptionError(t *testing.T) {
 	}
 }
 
-// Ensure Option.String() doesn't panic.  We make no gaurantee
+// Ensure Option.String() doesn't panic.  We make no guarantee
 // on the output formatting.
 func TestOptionString(t *testing.T) {
 	opt := &Option{Names: []string{"o", "O", "opt", "Opt"}}
