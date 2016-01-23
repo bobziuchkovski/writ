@@ -45,10 +45,12 @@ func panicCommand(format string, values ...interface{}) {
 	panic(e)
 }
 
-// A Path represents a parsed Command list as returned by Command.Decode().
+// Path represents a parsed Command list as returned by Command.Decode().
+// It is used to differentiate between user selection of commands and
+// subcommands.
 type Path []*Command
 
-// String returns the names of each command joined by spaces
+// String returns the names of each command joined by spaces.
 func (p Path) String() string {
 	var parts []string
 	for _, cmd := range p {
@@ -78,21 +80,19 @@ func (p Path) findOption(name string) *Option {
 	return nil
 }
 
-// New reads the input spec argument, searching for fields tagged
-// with "option", "flag", or "command".  The field type and tags are used to
-// construct a corresponding Command instance, which can be used to decode
-// program arguments.  See the package overview documentation for details.
+// New reads the input spec, searching for fields tagged with "option",
+// "flag", or "command".  The field type and tags are used to construct
+// a corresponding Command instance, which can be used to decode program
+// arguments.  See the package overview documentation for details.
 //
-// NOTE: The spec value must be a pointer to a struct
+// NOTE: The spec value must be a pointer to a struct.
 func New(name string, spec interface{}) *Command {
 	cmd := parseCommandSpec(name, spec, nil)
 	cmd.validate()
 	return cmd
 }
 
-// Command is used to specify program options and subcommands.  Commands
-// are generally constructed with New() but can be created directly if added
-// flexibility or runtime dynamism is required.
+// Command specifies program options and subcommands.
 type Command struct {
 	// Required
 	Name string
@@ -101,13 +101,11 @@ type Command struct {
 	Aliases     []string
 	Options     []*Option
 	Subcommands []*Command
-
-	// Optional; used for help output only
 	Help        Help
-	Description string // Commands without descriptions are hidden from help output
+	Description string // Commands without descriptions are hidden
 }
 
-// String returns the command's name
+// String returns the command's name.
 func (c *Command) String() string {
 	return c.Name
 }
@@ -116,9 +114,7 @@ func (c *Command) String() string {
 // It matches Option arguments, both short and long-form, and decodes those
 // arguments with the matched Option's Decoder field. If the Command has
 // associated subcommands, the subcommand names are matched and extracted
-// from the start of the positional arguments. Decode returns a Path that
-// identifies the selected command hierarchy, along with the remaining
-// unmatched positional arguments.
+// from the start of the positional arguments.
 //
 // To avoid ambiguity, subcommand matching terminates at the first unmatched
 // positional argument.  Similarly, option names are matched against the
@@ -138,10 +134,9 @@ func (c *Command) Decode(args []string) (path Path, positional []string, err err
 	return parseArgs(c, args)
 }
 
-// Subcommand is a convenience method to locate subcommands by name.  If the
-// method receiver has a subcommand with the given name, the subcommand is
-// returned.  Otherwise, nil is returned.  Subcommands are matched if the
-// the name or any of its aliases match.
+// Subcommand locates subcommands on the method receiver.  It returns a match
+// if any of the receiver's subcommands have a matching name or alias.  Otherwise
+// it returns nil.
 func (c *Command) Subcommand(name string) *Command {
 	for _, sub := range c.Subcommands {
 		if sub.Name == name {
@@ -156,11 +151,9 @@ func (c *Command) Subcommand(name string) *Command {
 	return nil
 }
 
-// Option is a convenience method to locate options by name.  If the current
-// Command has an Option with the given name, that Option is returned.
-// Otherwise, nil is returned.  Options are matched if any of the Option's
-// names match.  Options are searched only on the method receiver, not any
-// of its subcommands.
+// Option locates options on the method receiver.  It returns a match if any of
+// the receiver's options have a matching name.  Otherwise it returns nil.  Options
+// are searched only on the method receiver, not any of it's subcommands.
 func (c *Command) Option(name string) *Option {
 	for _, o := range c.Options {
 		for _, n := range o.Names {
@@ -172,11 +165,9 @@ func (c *Command) Option(name string) *Option {
 	return nil
 }
 
-// GroupOptions is a convenience method for building OptionGroups, which are
-// used to customize help output.  It searches the method receiver for the
-// named options and returns a corresponding OptionGroup.  Options are matched
-// if any of the Option's names match.  If an option is not found, GroupOptions
-// panics.
+// GroupOptions is used to build OptionGroups for help output.  It searches the
+// method receiver for the named options and returns a corresponding OptionGroup.
+// If any of the named options are not found, GroupOptions panics.
 func (c *Command) GroupOptions(names ...string) OptionGroup {
 	var group OptionGroup
 	for _, n := range names {
@@ -189,11 +180,9 @@ func (c *Command) GroupOptions(names ...string) OptionGroup {
 	return group
 }
 
-// GroupCommands is a convenience method for building CommandGroups, which are
-// used to customize help output.  It searches the method receiver for the
-// named subcommands and returns a corresponding CommandGroup.  Subcommands are
-// matched if their name or any of their aliases match.  If a subcommand is not
-// found, GroupCommands panics.
+// GroupCommands is used to build CommandGroups for help output.  It searches the
+// method receiver for the named subcommands and returns a corresponding CommandGroup.
+// If any of the named subcommands are not found, GroupCommands panics.
 func (c *Command) GroupCommands(names ...string) CommandGroup {
 	var group CommandGroup
 	for _, n := range names {

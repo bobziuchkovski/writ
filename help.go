@@ -36,51 +36,42 @@ var templateFuncs = map[string]interface{}{
 // The Help type is used for presentation purposes only, and does not affect
 // argument parsing.
 //
-// It is used by Command.ExitHelp() and Command.WriteHelp() to render help
-// output.  The default behavior renders output similar to GNU commands, but
-// is fully customizable.  Every command has an associated Help field.
-//
 // The Command.ExitHelp() and Command.WriteHelp() methods execute the
 // template assigned to the Template field, passing the Command as input.
 // If the Template field is nil, the writ package's default template is used.
-//
-// The New() function creates a single CommandGroup for all commands it parses
-// and a single OptionGroup for all options it parses.
 type Help struct {
-	OptionGroups  []OptionGroup  // Defaults to a single OptionGroup with all parsed spec option fields
-	CommandGroups []CommandGroup // Defaults to a single CommandGroup with all parsed spec command fields
+	OptionGroups  []OptionGroup
+	CommandGroups []CommandGroup
 
 	// Optional
 	Template *template.Template // Used to render output
-	Usage    string             // Short message displayed at the top of output.  Typically one line.
-	Header   string             // Optional message displayed after Usage.
-	Footer   string             // Optional message displayed at the end of output.
+	Usage    string             // Short message displayed at the top of output
+	Header   string             // Displayed after Usage
+	Footer   string             // Displayed at the end of output
 }
 
-// OptionGroup is used to customize help output.  It groups related
-// Options for output by Command.WriteHelp() and Command.ExitHelp().
-// When New() parses an input spec, it creates a single OptionGroup for all
-// parsed options that have non-empty descriptions.
+// OptionGroup is used to customize help output.  It groups related Options
+// for output.  When New() parses an input spec, it creates a single OptionGroup
+// for all parsed options that have descriptions.
 type OptionGroup struct {
 	Options []*Option
 
 	// Optional
-	Name   string // Not displayed; for matching purposes within the temp
-	Header string // Optional message displayed before the group
-	Footer string // Optional message displayed after the group
+	Name   string // Not displayed; for matching purposes within the template
+	Header string // Displayed before the group
+	Footer string // Displayed after the group
 }
 
-// CommandGroup is used to customize help output.  It groups related
-// Commands for output by Command.WriteHelp() and Command.ExitHelp().
-// When New() parses an input spec, it creates a single CommandGroup for all
-// parsed Subcommands that have non-empty descriptions.
+// CommandGroup is used to customize help output.  It groups related Commands
+// for output.  When New() parses an input spec, it creates a single CommandGroup
+// for all parsed commands that have descriptions.
 type CommandGroup struct {
 	Commands []*Command
 
 	// Optional
 	Name   string // Not displayed; for matching purposes within the template
-	Header string // Optional message displayed before the group
-	Footer string // Optional message displayed after the group
+	Header string // Displayed before the group
+	Footer string // Displayed after the group
 }
 
 func formatOption(o *Option) string {

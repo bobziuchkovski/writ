@@ -19,76 +19,48 @@
 // THE SOFTWARE.
 
 /*
-Package writ implements command line decoding according to GNU getopt_long
-conventions: http://www.gnu.org/software/libc/manual/html_node/Argument-Syntax.html
+Package writ implements option decoding with GNU getopt_long conventions.
 All long and short-form option variations are supported: --with-x, --name Sam,
 --day=Friday, -i FILE, -vvv, etc.
 
-Additionally, writ supports subcommands, customizable help output generation,
-and default values.  However, writ is purely a decoder package.  Command
-dispatch and execution are intentionally omitted.
-
 Basics
 
-Writ is modeled after the Go encoding/* packages.  The New() function
-reads an input struct with relevant field tags and builds a Command that is
-capable of decoding short and long-form command-line options into the input
-struct's fields.
+Writ uses the Command and Option types to represent available options and
+subcommands.  Input arguments are decoded with Command.Decode().
 
-Options are specified via "flag" and "option" field tags, and subcommands are
-specified via "command" field tags.  Additional field tags may be used to
-specify command aliases, default values, and help content.
+For convenience, the New() function can parse an input struct into a
+Command with Options that represent the input struct's fields.  It uses
+struct field tags to control the behavior.  The resulting Command's Decode()
+method updates the struct's fields in-place when option arguments are decoded.
 
-Once a Command is constructed, it's Decode() method is used to parse an input
-[]string of arguments (e.g. os.Args[1:]).  The return values of Decode()
-specify the parsed command path, remaining positional arguments, and any
-parse/decode errors encountered.  The command path is a slice of []*Command
-representing the invoked command hierarchy.  This can be used to differentiate
-between user selection of top-level commands vs. subcommands.
+Alternatively, Commands and Options may be created directly.  All fields on
+these types are exported.
 
 Options
 
-Options are specified via the "option" and "flag" struct tags.  Both are
-considered options, but fields marked "option" take arguments, whereas
-fields marked "flag" do not.
+Options are specified via the "option" and "flag" struct tags.  Both represent
+options, but fields marked "option" take arguments, whereas fields marked
+"flag" do not.
 
-Field values are decoded via implementations of OptionDecoder.  Writ provides
-OptionDecoder implementations for most basic field types along with several
-convenience types.  See the NewOptionDecoder() documentation for a list of
-supported types.  If a field implements the OptionDecoder interface, the
-Decode() method from the field will be used.  Otherwise, writ will attempt
-to generate an OptionDecoder for known field types.  If a field marked "flag"
-or "option" is of an unsupported type and doesn't implement OptionDecoder,
-then New() will panic when parsing the field.
-
-Since flags take no arguments, they are valid only with bool, int, and
-OptionDecoder fields.  Bool flags are true if the option is parsed, and int
-flags maintain a count of the number of times the option is parsed.
+Every Option must have an OptionDecoder.  Writ provides decoders for most
+basic types, as well as some convenience types.  See the NewOptionDecoder()
+function docs for details.
 
 Commands
 
-New() parses an input struct with relevant field tags to build a top-level
-Command.  Subcommands are supported by using the "command" field tag.  Fields
-marked with "command" must be of struct type, and are parsed the same way as
-top-level commands.  The resulting subcommands are then assigned to the
-parent's Subcommand field.  The process repeats recursively.
+New() parses an input struct to build a top-level  Command.  Subcommands are
+supported by using the "command" field tag.  Fields marked with "command" must
+be of struct type, and are parsed the same way as top-level commands.
 
 Help Output
 
-Writ provides helper methods for generating help output.  Command.WriteHelp()
+Writ provides methods for generating help output.  Command.WriteHelp()
 generates help content and writes to a given io.Writer.  Command.ExitHelp()
-goes a step further.  If the error argument is non-nil, it writes both the
-help content and error message to Stderr, and then terminates the program with
-an exit code of 1.  If the error argument is nil, it writes the help content to
-os.Stdout and terminates the program with an exit code of 0.
+writes help content to stdout or stderr and terminates the program.
 
-The help output is designed to mimic the --help output for common GNU programs.
-New() parses command and option descriptions from the "description" field tag.
-Options may also specify the "placeholder" tag.
-
-Help content is generated via the text/template package.  Writ provides a
-default template that can be overridden on a per-Command basis.  See the
-documentation of the Help type for more details.
+Writ uses a template to generate the help content.  The default template
+mimics --help output for common GNU programs.  See the documentation of the
+Help type for more details.
 
 Field Tag Reference
 

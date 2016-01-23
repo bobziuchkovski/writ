@@ -13,16 +13,15 @@ import (
 type Config struct {
 	help      bool
 	verbosity int
-
-	// A hidden flag
-	tolerance float32
-
-	// A dynamically added option for Mac OS
 	useQuartz bool
 }
 
-// This example demonstrates explicit Command and Option construction
-// without the use of writ.New()
+// This example demonstrates explicit Command and Option creation,
+// along with explicit option grouping.  It checks the host platform
+// and dynamically adds a --use-quartz flag if the example is run on
+// Mac OS.  The same result could be achieved by using writ.New() to
+// construct a Command, and then adding the platform-specific option
+// to the resulting Command directly.
 func Example_explicit() {
 	config := &Config{}
 	cmd := &writ.Command{Name: "explicit"}
@@ -40,21 +39,13 @@ func Example_explicit() {
 			Flag:        true,
 			Plural:      true,
 		},
-		{
-			Names:   []string{"t", "tolerance"},
-			Decoder: writ.NewOptionDecoder(&config.tolerance),
-		},
 	}
 
-	cmd.Help = writ.Help{
-		Usage:  "Usage: explicit [OPTION]...",
-		Header: "Explicit demonstrates explicit commands and options",
-		Footer: "This method is flexible but more verbose than using writ.New()",
-	}
 	general := cmd.GroupOptions("help", "v")
 	general.Header = "General Options:"
 	cmd.Help.OptionGroups = append(cmd.Help.OptionGroups, general)
 
+	// Dynamically add --with-quartz on Mac OS
 	if runtime.GOOS == "darwin" {
 		cmd.Options = append(cmd.Options, &writ.Option{
 			Names:       []string{"use-quartz"},

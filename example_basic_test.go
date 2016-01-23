@@ -10,19 +10,21 @@ import (
 	"strings"
 )
 
-// The Greeter's field tags are parsed into flags and options by writ.New()
 type Greeter struct {
 	HelpFlag  bool   `flag:"help" description:"display this help message"`
 	Verbosity int    `flag:"v, verbose" description:"display verbose output"`
 	Name      string `option:"n, name" default:"Everyone" description:"the person to greet"`
 }
 
+// This example uses writ.New() to build a *writ.Command from the Greeter's
+// struct fields.  The resulting *writ.Command decodes and updates the
+// Greeter's fields in-place.  The Command.ExitHelp() method is used to
+// display help content if --help is specified, or if invalid input
+// arguments are received.
 func Example_basic() {
-	// First, the Greeter is parsed into a *Command by writ.New()
 	greeter := &Greeter{}
 	cmd := writ.New("greeter", greeter)
 
-	// Next, the input arguments are decoded.
 	// Use cmd.Decode(os.Args[1:]) in a real application
 	_, positional, err := cmd.Decode([]string{"-vvv", "--name", "Sam", "How's it going?"})
 	if err != nil || greeter.HelpFlag {

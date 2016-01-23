@@ -55,24 +55,20 @@ func panicOption(format string, values ...interface{}) {
 	panic(e)
 }
 
-// Option is used to specify program options and flags.  Options are
-// created implicitly when New() parses a command spec.  They may also be
-// created directly if added flexibility or runtime dynamism is required.
+// Option specifies program options and flags.
 type Option struct {
 	// Required
-	Names   []string      // All of the names for the Option, long and short alike
-	Decoder OptionDecoder // The Decoder is responsible for parsing the Option's arguments
+	Names   []string
+	Decoder OptionDecoder
 
 	// Optional
-	Flag   bool // If Flag is set, the Option takes no arguments
-	Plural bool // If Plural is set, the Option may be specified multiple times
-
-	// Optional; used for help output only
-	Description string // Options without descriptions are hidden from help output
+	Flag        bool   // If set, the Option takes no arguments
+	Plural      bool   // If set, the Option may be specified multiple times
+	Description string // Options without descriptions are hidden
 	Placeholder string
 }
 
-// ShortNames returns a filtered slice of the names that are exactly one rune in length
+// ShortNames returns a filtered slice of the names that are exactly one rune in length.
 func (o *Option) ShortNames() []string {
 	var short []string
 	for _, n := range o.Names {
@@ -83,7 +79,7 @@ func (o *Option) ShortNames() []string {
 	return short
 }
 
-// LongNames returns a filtered slice of the names that are longer than one rune in length
+// LongNames returns a filtered slice of the names that are longer than one rune in length.
 func (o *Option) LongNames() []string {
 	var long []string
 	for _, n := range o.Names {
@@ -128,9 +124,9 @@ func (o *Option) validate() {
 	}
 }
 
-// OptionDecoder is the interface used for decoding Option arguments.
-// Every Option must have an OptionDecoder assigned.  New() constructs
-// and assigns OptionDecoders automatically for supported field types.
+// OptionDecoder is used for decoding Option arguments.  Every Option must
+// have an OptionDecoder assigned.  New() constructs and assigns
+// OptionDecoders automatically for supported field types.
 type OptionDecoder interface {
 	Decode(arg string) error
 }
@@ -194,10 +190,7 @@ func getDecoderFunc(kind reflect.Kind) decoderFunc {
 }
 
 // NewOptionDecoder builds an OptionDecoder for supported value types.  The val
-// parameter must be a pointer to one of the supported types, or else
-// NewOptionDecoder will panic.
-//
-// Supported types
+// parameter must be a pointer to one of the following supported types:
 //
 // 		int, int8, int16, int32, int64, uint, uint8, iunt16, uint32, uint64
 //		float32, float64
@@ -347,19 +340,18 @@ type flagAccumulator struct {
 	value *int
 }
 
-// OptionDefaulter is used to initialize default option values.  If an
-// OptionDecoder implemented the OptionDefaulter interface, its SetDefault()
-// method is called prior to decoding options.
+// OptionDefaulter initializes option values to defaults.  If an OptionDecoder
+// implements the OptionDefaulter interface, its SetDefault() method is called
+// prior to decoding options.
 type OptionDefaulter interface {
 	SetDefault()
 }
 
-// NewDefaulter builds an OptionDecoder that implements the OptionDefaulter
-// interface.  The value for defaultArg is supplied to the underlying
-// OptionDecoder's Decode() method when SetDefault() is called.
-// If the value fails to decode, the OptionDefaulter will panic.
-func NewDefaulter(d OptionDecoder, defaultArg string) OptionDecoder {
-	return defaulter{d, defaultArg}
+// NewDefaulter builds an OptionDecoder that implements OptionDefaulter.
+// SetDefault calls decoder.Decode() with the value of defaultArg.  If the
+// value fails to decode, the OptionDefaulter will panic.
+func NewDefaulter(decoder OptionDecoder, defaultArg string) OptionDecoder {
+	return defaulter{decoder, defaultArg}
 }
 
 type defaulter struct {
@@ -375,10 +367,10 @@ func (d defaulter) SetDefault() {
 	}
 }
 
-// NewEnvDefaulter builds an OptionDecoder that implements the OptionDefaulter
-// interface.  The key's value is used to specify an environment variable.
-// If the environment variable is set, the value is supplied to the underlying
-// OptionDecoder's Decode() method when SetDefault() is called.s
+// NewEnvDefaulter builds an OptionDecoder that implements OptionDefaulter.
+// The key's value is used to specify an environment variable.  If the
+// environment variable is set, the value is supplied to the underlying
+// OptionDecoder's Decode() method when SetDefault() is called.
 // If the environment variable isn't set or fails to decode, the underlying
 // OptionDecoder's SetDefault() method will be invoked (if the Decoder
 // implements the OptionDefaulter interface).  Otherwise, no action is taken.
