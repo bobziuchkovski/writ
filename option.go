@@ -210,18 +210,14 @@ func getDecoderFunc(kind reflect.Kind) decoderFunc {
 //			Argument will be used to create a new file, or "-" to specify os.Stdout.
 //			If a file already exists at the path specified, it will be overwritten.
 func NewOptionDecoder(val interface{}) OptionDecoder {
-	// TODO: Check for nil val?
-	// TODO: Cleanup
 	rval := reflect.ValueOf(val)
 	if rval.Kind() != reflect.Ptr {
 		panicOption("NewDecoder must be called on a pointer")
 	}
-	elem := rval.Elem()
-
-	// Not sure if this check is necessary or not....
-	if !elem.CanSet() {
-		panicOption("NewDecoder value must be settable")
+	if rval.IsNil() {
+		panicOption("NewDecoder called on nil pointer")
 	}
+	elem := rval.Elem()
 	etype := elem.Type()
 	ekind := elem.Kind()
 
