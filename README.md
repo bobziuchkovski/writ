@@ -29,7 +29,7 @@ The following examples are copied from writ's package documentation.  Please rea
 
 ### Basic Use
 
-```golang
+```go
 package main
 
 import (
@@ -71,7 +71,7 @@ func main() {
 
 ### Convenience Features
 
-```golang
+```go
 package main
 
 import (
@@ -145,7 +145,7 @@ func main() {
 
 ### Explicit Commands and Options
 
-```golang
+```go
 // Copyright 2016 Bob Ziuchkovski. All rights reserved.
 // Use of this source code is governed by a MIT-style
 // license that can be found in the LICENSE file.
