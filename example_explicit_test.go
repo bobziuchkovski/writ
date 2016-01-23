@@ -18,7 +18,7 @@ type Config struct {
 
 // This example demonstrates explicit Command and Option creation,
 // along with explicit option grouping.  It checks the host platform
-// and dynamically adds a --use-quartz flag if the example is run on
+// and dynamically adds a --with-quartz flag if the example is run on
 // Mac OS.  The same result could be achieved by using writ.New() to
 // construct a Command, and then adding the platform-specific option
 // to the resulting Command directly.
@@ -48,12 +48,12 @@ func Example_explicit() {
 	// Dynamically add --with-quartz on Mac OS
 	if runtime.GOOS == "darwin" {
 		cmd.Options = append(cmd.Options, &writ.Option{
-			Names:       []string{"use-quartz"},
+			Names:       []string{"with-quartz"},
 			Description: "Use Quartz display on Mac",
 			Decoder:     writ.NewFlagDecoder(&config.useQuartz),
 			Flag:        true,
 		})
-		platform := cmd.GroupOptions("use-quartz")
+		platform := cmd.GroupOptions("with-quartz")
 		platform.Header = "Platform Options:"
 		cmd.Help.OptionGroups = append(cmd.Help.OptionGroups, platform)
 	}
