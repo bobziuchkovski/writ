@@ -349,7 +349,7 @@ type OptionDefaulter interface {
 
 // NewDefaulter builds an OptionDecoder that implements OptionDefaulter.
 // SetDefault calls decoder.Decode() with the value of defaultArg.  If the
-// value fails to decode, the OptionDefaulter will panic.
+// value fails to decode, SetDefault panics.
 func NewDefaulter(decoder OptionDecoder, defaultArg string) OptionDecoder {
 	return defaulter{decoder, defaultArg}
 }
