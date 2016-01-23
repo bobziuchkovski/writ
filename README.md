@@ -7,6 +7,8 @@
 
 ## Overview
 
+Writ is a flexible option parser with thorough test coverate.  It's meant to "just work" and stay out of the way.
+
 Writ implements command line decoding according to [GNU getopt_long conventions](http://www.gnu.org/software/libc/manual/html_node/Argument-Syntax.html).  All long and short-form option variations are supported: `--with-x`, `--name Sam`, `--day=Friday`, `-i FILE`, `-vvv`, etc.
 
 Additionally, writ supports subcommands, customizable help output generation, and default values. However, writ is purely a decoder package. Command dispatch and execution are intentionally omitted.
