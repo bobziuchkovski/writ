@@ -1845,6 +1845,24 @@ func checkInvalidOptionGroup(cmd *Command, name ...string) (err error) {
 	return nil
 }
 
+func TestCheckUnknownTagType(t *testing.T) {
+	defer func() {
+		spec := struct {
+			Bogus int `bogus:"bogus"`
+		}{}
+		rval := reflect.ValueOf(spec)
+		field, present := rval.Type().FieldByName("Bogus")
+		if !present {
+			t.Errorf("Expected Bogus field to be present")
+			return
+		}
+
+		defer func() { recover() }()
+		checkTags(field, "bogus")
+		t.Errorf("Expected checkFields() to panic on unknown tag %q, but it didn't happen", "bogus")
+	}()
+}
+
 /*
  * Misc coverage tests to ensure code doesn't panic/blow-up
  */
