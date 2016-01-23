@@ -14,7 +14,7 @@ supported: `--with-x`, `--name Sam`, `--day=Friday`, `-i FILE`, `-vvv`, etc.
 
 ## API Promise
 
-Minor breaking changes may occur prior to the 1.0 release.  After 1.0 release, the API is guaranteed to remain backwards compatible.
+Minor breaking changes may occur prior to the 1.0 release.  After the 1.0 release, the API is guaranteed to remain backwards compatible.
 
 ## Basic Use
 
