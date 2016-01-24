@@ -110,9 +110,6 @@ func (r *List) Run(p writ.Path, positional []string) {
     if r.HelpFlag {
         p.Last().ExitHelp(nil)
     }
-    if len(positional) == 0 {
-        p.Last().ExitHelp(errors.New("ls requires one or more PATH arguments"))
-    }
     // Listing operation omitted for brevity.  This would be a call to ioutil.ReadDir
     // followed by conditional formatting based on the r.LongFormat value.
 }
@@ -125,7 +122,7 @@ func main() {
     cmd := writ.New("gobox", gobox)
     cmd.Help.Usage = "Usage: gobox COMMAND [OPTION]... [ARG]..."
     cmd.Subcommand("ln").Help.Usage = "Usage: gobox ln [-s] OLD NEW"
-    cmd.Subcommand("ls").Help.Usage = "Usage: gobox ls [-l] PATH [PATH]..."
+    cmd.Subcommand("ls").Help.Usage = "Usage: gobox ls [-l] [PATH]..."
 
     path, positional, err := cmd.Decode(os.Args[1:])
     if err != nil {
