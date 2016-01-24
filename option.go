@@ -65,7 +65,7 @@ type Option struct {
 	Flag        bool   // If set, the Option takes no arguments
 	Plural      bool   // If set, the Option may be specified multiple times
 	Description string // Options without descriptions are hidden
-	Placeholder string
+	Placeholder string // Displayed next to option in help output (e.g. FILE)
 }
 
 // ShortNames returns a filtered slice of the names that are exactly one rune in length.

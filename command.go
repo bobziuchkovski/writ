@@ -59,7 +59,8 @@ func (p Path) String() string {
 	return strings.Join(parts, " ")
 }
 
-// First returns the first command of the path.  This is the top-level/root command.
+// First returns the first command of the path.  This is the top-level/root command
+// where Decode() was invoked.
 func (p Path) First() *Command {
 	return p[0]
 }
@@ -118,7 +119,7 @@ func (c *Command) String() string {
 //
 // To avoid ambiguity, subcommand matching terminates at the first unmatched
 // positional argument.  Similarly, option names are matched against the
-// command hierarchy as it exists at the point the option is encounter.  If
+// command hierarchy as it exists at the point the option is encountered.  If
 // command "first" has a subcommand "second", and "second" has an option
 // "foo", then "first second --foo" is valid but "first --foo second" returns
 // an error.  If the two commands, "first" and "second", both specify a "bar"
