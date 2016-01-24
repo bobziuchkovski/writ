@@ -554,7 +554,7 @@ func parseFlagField(field reflect.StructField, fieldVal reflect.Value) *Option {
 			opt.Decoder = NewFlagAccumulator(fieldVal.Addr().Interface().(*int))
 			opt.Plural = true
 		default:
-			panicCommand("field type not valid as a flag (field %s)", field.Name)
+			panicCommand("field type not valid as a flag -- did you mean to use %q instead? (field %s)", "option", field.Name)
 		}
 	}
 
@@ -583,7 +583,7 @@ func parseOptionField(field reflect.StructField, fieldVal reflect.Value) *Option
 		opt.Decoder = fieldVal.Addr().Interface().(OptionDecoder)
 	} else {
 		if fieldVal.Kind() == reflect.Bool {
-			panicCommand("bool fields are not valid as options.  Use a \"flag\" tag instead (field %s)", field.Name)
+			panicCommand("bool fields are not valid as options.  Use a %q tag instead (field %s)", "flag", field.Name)
 		}
 		if fieldVal.Kind() == reflect.Slice || fieldVal.Kind() == reflect.Map {
 			opt.Plural = true
