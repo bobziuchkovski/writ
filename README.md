@@ -76,15 +76,15 @@ import (
 )
 
 type Config struct {
-    help      bool
-    verbosity int
-    useQuartz bool
+    help       bool
+    verbosity  int
+    bootloader string
 }
 
 // This example demonstrates explicit Command and Option creation,
 // along with explicit option grouping.  It checks the host platform
-// and dynamically adds a --with-quartz flag if the example is run on
-// Mac OS.  The same result could be achieved by using writ.New() to
+// and dynamically adds a --bootloader option if the example is run on
+// Linux.  The same result could be achieved by using writ.New() to
 // construct a Command, and then adding the platform-specific option
 // to the resulting Command directly.
 func main() {
@@ -110,15 +110,15 @@ func main() {
     general.Header = "General Options:"
     cmd.Help.OptionGroups = append(cmd.Help.OptionGroups, general)
 
-    // Dynamically add --with-quartz on Mac OS
-    if runtime.GOOS == "darwin" {
+    // Dynamically add --bootloader on Linux
+    if runtime.GOOS == "linux" {
         cmd.Options = append(cmd.Options, &writ.Option{
-            Names:       []string{"with-quartz"},
-            Description: "Use Quartz display on Mac",
-            Decoder:     writ.NewFlagDecoder(&config.useQuartz),
-            Flag:        true,
+            Names:       []string{"bootloader"},
+            Description: "Use the specified bootloader (grub, grub2, or lilo)",
+            Decoder:     writ.NewOptionDecoder(&config.bootloader),
+            Placeholder: "NAME",
         })
-        platform := cmd.GroupOptions("with-quartz")
+        platform := cmd.GroupOptions("bootloader")
         platform.Header = "Platform Options:"
         cmd.Help.OptionGroups = append(cmd.Help.OptionGroups, platform)
     }
