@@ -455,10 +455,10 @@ var (
 func parseCommandSpec(name string, spec interface{}, path Path) *Command {
 	rval := reflect.ValueOf(spec)
 	if rval.Kind() != reflect.Ptr {
-		panicCommand("spec must be a pointer to struct type, not %s", rval.Kind())
+		panicCommand("command spec must be a pointer to struct type, not %s", rval.Kind())
 	}
 	if rval.Elem().Kind() != reflect.Struct {
-		panicCommand("spec must be a pointer to struct type, not %s", rval.Kind())
+		panicCommand("command spec must be a pointer to struct type, not %s", rval.Kind())
 	}
 	rval = rval.Elem()
 
