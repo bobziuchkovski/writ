@@ -111,6 +111,33 @@ Available Commands:
 	},
 
 	{
+		Description: "Command description wrapping",
+		Spec: &struct {
+			Command struct{} `command:"command" description:"A command with a reeeeeeeeeeeeeeeeeeeeeeeeeeeeeaaaaaaaaaallllllyyyyy loooooooooooooooonnnnnnngggggg description"`
+		}{},
+		Rendered: `Usage: test [OPTION]... [ARG]...
+
+Available Commands:
+  command                   A command with a reeeeeeeeeeeeeeeeeeeeeeeeeeeeeaaaaa
+                            aaaaallllllyyyyy loooooooooooooooonnnnnnngggggg desc
+                            ription
+`,
+	},
+
+	{
+		Description: "Command description wrapping with explicit newline in description",
+		Spec: &struct {
+			Command struct{} `command:"command" description:"A command with a\nnew line in the description"`
+		}{},
+		Rendered: `Usage: test [OPTION]... [ARG]...
+
+Available Commands:
+  command                   A command with a
+                            new line in the description
+`,
+	},
+
+	{
 		Description: "Option description wrapping",
 		Spec: &struct {
 			Option int `option:"opt" description:"An option with a reeeeeeeeeeeeeeeeeeeeeeeeeeeeeaaaaaaaaaallllllyyyyy loooooooooooooooonnnnnnngggggg description"`
@@ -121,6 +148,19 @@ Available Options:
   --opt=ARG                 An option with a reeeeeeeeeeeeeeeeeeeeeeeeeeeeeaaaaa
                             aaaaallllllyyyyy loooooooooooooooonnnnnnngggggg desc
                             ription
+`,
+	},
+
+	{
+		Description: "Option description wrapping with explicit newline in description",
+		Spec: &struct {
+			Option int `option:"opt" description:"An option with a\nnew line in the description"`
+		}{},
+		Rendered: `Usage: test [OPTION]... [ARG]...
+
+Available Options:
+  --opt=ARG                 An option with a
+                            new line in the description
 `,
 	},
 
