@@ -1,5 +1,13 @@
 # Writ Changelog
 
+## 0.8.5 (2016-01-24)
+
+- Fix: Add a missing nil check to NewOptionDecoder
+- Fix: Fix wrapping for multi-line descriptions
+- Tests: Add coverage for remaining code, except Command.ExitHelp().  Coverage is at 98.7%.
+- Docs: Overhaul docs and examples for brevity
+- Docs: Add an example for subcommand handling
+
 ## 0.8.4 (2016-01-22)
 
 - Feature: Hide options and commands with empty descriptions from help output
