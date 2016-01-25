@@ -71,7 +71,6 @@ func main() {
 Help output:
 
 ```
-Help Output:
 Usage: greeter [OPTION]... MESSAGE
 Greet users, displaying MESSAGE
 
