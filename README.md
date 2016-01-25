@@ -47,6 +47,8 @@ type Greeter struct {
 func main() {
     greeter := &Greeter{}
     cmd := writ.New("greeter", greeter)
+    cmd.Help.Usage = "Usage: greeter [OPTION]... MESSAGE"
+    cmd.Help.Header = "Greet users, displaying MESSAGE"
 
     // Use cmd.Decode(os.Args[1:]) in a real application
     _, positional, err := cmd.Decode([]string{"-vvv", "--name", "Sam", "How's it going?"})
@@ -69,12 +71,14 @@ func main() {
 Help output:
 
 ```
-Usage: greeter [OPTION]... [ARG]...
+Help Output:
+Usage: greeter [OPTION]... MESSAGE
+Greet users, displaying MESSAGE
 
 Available Options:
-  --help                    display this help message
-  -v, --verbose             display verbose output
-  -n, --name=ARG            the person to greet
+  --help                    Display this help message and exit
+  -v, --verbose             Display verbose output
+  -n, --name=ARG            The person or people to greet
 ```
 
 

@@ -11,9 +11,9 @@ import (
 )
 
 type Greeter struct {
-	HelpFlag  bool   `flag:"help" description:"display this help message"`
-	Verbosity int    `flag:"v, verbose" description:"display verbose output"`
-	Name      string `option:"n, name" default:"Everyone" description:"the person to greet"`
+	HelpFlag  bool   `flag:"help" description:"Display this help message and exit"`
+	Verbosity int    `flag:"v, verbose" description:"Display verbose output"`
+	Name      string `option:"n, name" default:"Everyone" description:"The person or people to greet"`
 }
 
 // This example uses writ.New() to build a command from the Greeter's
@@ -24,6 +24,8 @@ type Greeter struct {
 func Example_basic() {
 	greeter := &Greeter{}
 	cmd := writ.New("greeter", greeter)
+	cmd.Help.Usage = "Usage: greeter [OPTION]... MESSAGE"
+	cmd.Help.Header = "Greet users, displaying MESSAGE"
 
 	// Use cmd.Decode(os.Args[1:]) in a real application
 	_, positional, err := cmd.Decode([]string{"-vvv", "--name", "Sam", "How's it going?"})
@@ -42,10 +44,11 @@ func Example_basic() {
 	// I'm feeling reaaally chatty today!
 
 	// Help Output:
-	// Usage: greeter [OPTION]... [ARG]...
+	// Usage: greeter [OPTION]... MESSAGE
+	// Greet users, displaying MESSAGE
 	//
 	// Available Options:
-	//   --help                    display this help message
-	//   -v, --verbose             display verbose output
-	//   -n, --name=ARG            the person to greet
+	//   --help                    Display this help message and exit
+	//   -v, --verbose             Display verbose output
+	//   -n, --name=ARG            The person or people to greet
 }
