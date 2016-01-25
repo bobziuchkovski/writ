@@ -73,4 +73,16 @@ func (r ReplacerCmd) Replace() error {
 		return err
 	}
 	return r.Output.Close()
+
+	// Help Output:
+	// Usage: replacer [OPTION]...
+	// Perform text replacement according to the -r/--replace option
+	//
+	// Available Options:
+	//   -i FILE                   Read input values from FILE (default: stdin)
+	//   -o FILE                   Write output to FILE (default: stdout)
+	//   -r, --replace=ORIG=NEW    Replace occurrences of ORIG with NEW
+	//   -h, --help                Display this help text and exit
+	//
+	// By default, replacer reads from stdin and write to stdout.  Use the -i and -o options to override.
 }

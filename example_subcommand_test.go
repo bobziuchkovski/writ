@@ -50,8 +50,8 @@ func (r *List) Run(p writ.Path, positional []string) {
 }
 
 // This example demonstrates subcommands in a busybox style.  There's no requirement
-// that subcommands implement this particular Run() method, or any Run() method at
-// at all.
+// that subcommands implement the Run() method shown here.  It's just an example of
+// how subcommands might be implemented.
 func Example_subcommand() {
 	gobox := &GoBox{}
 	cmd := writ.New("gobox", gobox)
@@ -77,4 +77,25 @@ func Example_subcommand() {
 	default:
 		panic("BUG: Someone added a new command and forgot to add it's path here")
 	}
+
+	// Help output, gobox:
+	// Usage: gobox COMMAND [OPTION]... [ARG]...
+	//
+	// Available Commands:
+	//   ln                        Create a soft or hard link
+	//   ls                        List directory contents
+	//
+	// Help output, gobox ln:
+	// Usage: gobox ln [-s] OLD NEW
+	//
+	// Available Options:
+	//   -h, --help                Display this message and exit
+	//   -s                        Create a symlink instead of a hard link
+	//
+	// Help output, gobox ls:
+	// Usage: gobox ls [-l] [PATH]...
+	//
+	// Available Options:
+	//   -h, --help                Display this message and exit
+	//   -l                        Use long-format output
 }

@@ -16,7 +16,7 @@ type Greeter struct {
 	Name      string `option:"n, name" default:"Everyone" description:"the person to greet"`
 }
 
-// This example uses writ.New() to build a *writ.Command from the Greeter's
+// This example uses writ.New() to build a command from the Greeter's
 // struct fields.  The resulting *writ.Command decodes and updates the
 // Greeter's fields in-place.  The Command.ExitHelp() method is used to
 // display help content if --help is specified, or if invalid input
@@ -40,4 +40,12 @@ func Example_basic() {
 	// Output:
 	// Hi Sam! How's it going?
 	// I'm feeling reaaally chatty today!
+
+	// Help Output:
+	// Usage: greeter [OPTION]... [ARG]...
+	//
+	// Available Options:
+	//   --help                    display this help message
+	//   -v, --verbose             display verbose output
+	//   -n, --name=ARG            the person to greet
 }

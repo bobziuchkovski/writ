@@ -63,4 +63,18 @@ func Example_explicit() {
 	if err != nil || config.help {
 		cmd.ExitHelp(err)
 	}
+
+	// Help Output, Linux:
+	// General Options:
+	//   -h, --help                Display this help text and exit
+	//   -v                        Increase verbosity; may be specified more than once
+	//
+	// Platform Options:
+	//   --bootloader=NAME         Use the specified bootloader (grub, grub2, or lilo)
+	//
+	// Help Output, other platforms:
+	// General Options:
+	//   -h, --help                Display this help text and exit
+	//   -v                        Increase verbosity; may be specified more than once
+
 }
