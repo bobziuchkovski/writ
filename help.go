@@ -119,14 +119,22 @@ func wrapText(s string, width int, indent int) string {
 	runes := []rune(s)
 	linelen, i := 0, 0
 	for i < len(runes) {
-		if linelen == width {
+		if runes[i] == '\n' {
 			buf.WriteString("\n")
 			if i < len(runes) {
 				buf.WriteString(strings.Repeat(" ", indent))
 				linelen = indent
 			}
+		} else if linelen == width {
+			buf.WriteString("\n")
+			if i < len(runes) {
+				buf.WriteString(strings.Repeat(" ", indent))
+				linelen = indent
+			}
+			buf.WriteRune(runes[i])
+		} else {
+			buf.WriteRune(runes[i])
 		}
-		buf.WriteRune(runes[i])
 		i++
 		linelen++
 	}
