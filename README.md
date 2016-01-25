@@ -7,10 +7,13 @@
 
 ## Overview
 
-Writ is a flexible option parser with thorough test coverage.  It's meant to be simple and "just work".
+Writ is a flexible option parser with thorough test coverage.  It's meant to be simple and "just work".  Applications
+using writ look and behave similar to common GNU command-line applications, making them comfortable for end-users.
 
-Package writ implements option decoding with GNU getopt_long conventions. All long and short-form option variations are
+Writ implements option decoding with GNU getopt_long conventions. All long and short-form option variations are
 supported: `--with-x`, `--name Sam`, `--day=Friday`, `-i FILE`, `-vvv`, etc.
+
+Help output generation is supported using text/template.  The default template can be overriden with a custom template.
 
 ## API Promise
 
@@ -19,6 +22,12 @@ Minor breaking changes may occur prior to the 1.0 release.  After the 1.0 releas
 ## Basic Use
 
 Please see the [godocs](https://godoc.org/github.com/ziuchkovski/writ) for additional information.
+
+This example uses writ.New() to build a command from the Greeter's struct fields.  The resulting *writ.Command decodes
+and updates the Greeter's fields in-place.  The Command.ExitHelp() method is used to display help content if --help is
+specified, or if invalid input arguments are received.
+
+Source:
 
 ```go
 package main
@@ -35,11 +44,6 @@ type Greeter struct {
     Name      string `option:"n, name" default:"Everyone" description:"the person to greet"`
 }
 
-// This example uses writ.New() to build a *writ.Command from the Greeter's
-// struct fields.  The resulting *writ.Command decodes and updates the
-// Greeter's fields in-place.  The Command.ExitHelp() method is used to
-// display help content if --help is specified, or if invalid input
-// arguments are received.
 func main() {
     greeter := &Greeter{}
     cmd := writ.New("greeter", greeter)
@@ -62,9 +66,26 @@ func main() {
 }
 ```
 
+Help output:
+
+```
+Usage: greeter [OPTION]... [ARG]...
+
+Available Options:
+  --help                    display this help message
+  -v, --verbose             display verbose output
+  -n, --name=ARG            the person to greet
+```
+
+
 ### Subcommands
 
 Please see the [godocs](https://godoc.org/github.com/ziuchkovski/writ) for additional information.
+
+This example demonstrates subcommands in a busybox style.  There's no requirement that subcommands implement the Run()
+method shown here.  It's just an example of how subcommands might be implemented.
+
+Source:
 
 ```go
 package main
@@ -114,9 +135,6 @@ func (r *List) Run(p writ.Path, positional []string) {
     // followed by conditional formatting based on the r.LongFormat value.
 }
 
-// This example demonstrates subcommands in a busybox style.  There's no requirement
-// that subcommands implement this particular Run() method, or any Run() method at
-// at all.
 func main() {
     gobox := &GoBox{}
     cmd := writ.New("gobox", gobox)
@@ -145,9 +163,48 @@ func main() {
 }
 ```
 
+Help output, gobox:
+
+```
+Usage: gobox COMMAND [OPTION]... [ARG]...
+
+Available Commands:
+  ln                        Create a soft or hard link
+  ls                        List directory contents
+```
+
+Help output, gobox ln:
+
+```
+Usage: gobox ln [-s] OLD NEW
+
+Available Options:
+  -h, --help                Display this message and exit
+  -s                        Create a symlink instead of a hard link
+```
+
+Help output, gobox ls:
+
+```
+Usage: gobox ls [-l] [PATH]...
+
+Available Options:
+  -h, --help                Display this message and exit
+  -l                        Use long-format output
+```
+
+
+
 ### Explicit Commands and Options
 
 Please see the [godocs](https://godoc.org/github.com/ziuchkovski/writ) for additional information.
+
+This example demonstrates explicit Command and Option creation, along with explicit option grouping.
+It checks the host platform and dynamically adds a --bootloader option if the example is run on
+Linux.  The same result could be achieved by using writ.New() to construct a Command, and then adding
+the platform-specific option to the resulting Command directly.
+
+Source:
 
 ```go
 package main
@@ -164,12 +221,6 @@ type Config struct {
     bootloader string
 }
 
-// This example demonstrates explicit Command and Option creation,
-// along with explicit option grouping.  It checks the host platform
-// and dynamically adds a --bootloader option if the example is run on
-// Linux.  The same result could be achieved by using writ.New() to
-// construct a Command, and then adding the platform-specific option
-// to the resulting Command directly.
 func main() {
     config := &Config{}
     cmd := &writ.Command{Name: "explicit"}
@@ -212,6 +263,25 @@ func main() {
         cmd.ExitHelp(err)
     }
 }
+```
+
+Help output, Linux:
+
+```
+General Options:
+  -h, --help                Display this help text and exit
+  -v                        Increase verbosity; may be specified more than once
+
+Platform Options:
+  --bootloader=NAME         Use the specified bootloader (grub, grub2, or lilo)
+```
+
+Help output, other platforms:
+
+```
+General Options:
+  -h, --help                Display this help text and exit
+  -v                        Increase verbosity; may be specified more than once
 ```
 
 ## Authors
