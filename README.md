@@ -147,7 +147,9 @@ func main() {
 
     path, positional, err := cmd.Decode(os.Args[1:])
     if err != nil {
-        cmd.ExitHelp(err)
+        // Using path.Last() here ensures the user sees relevant help for their
+        // command selection
+        path.Last().ExitHelp(err)
     }
 
     // At this point, cmd.Decode() has already decoded option values into the gobox
