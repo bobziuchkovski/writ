@@ -229,6 +229,7 @@ type Config struct {
 func main() {
     config := &Config{}
     cmd := &writ.Command{Name: "explicit"}
+    cmd.Help.Usage = "Usage: explicit [OPTION]... [ARG]..."
     cmd.Options = []*writ.Option{
         {
             Names:       []string{"h", "help"},

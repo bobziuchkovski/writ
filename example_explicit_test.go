@@ -25,6 +25,7 @@ type Config struct {
 func Example_explicit() {
 	config := &Config{}
 	cmd := &writ.Command{Name: "explicit"}
+	cmd.Help.Usage = "Usage: explicit [OPTION]... [ARG]..."
 	cmd.Options = []*writ.Option{
 		{
 			Names:       []string{"h", "help"},
