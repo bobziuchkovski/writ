@@ -94,6 +94,11 @@ func New(name string, spec interface{}) *Command {
 }
 
 // Command specifies program options and subcommands.
+//
+// NOTE: If building a *Command directly without New(), the Help output
+// will be empty by default.  Most applications will want to set the
+// Help.Usage and Help.CommandGroups / Help.OptionGroups fields as
+// appropriate.
 type Command struct {
 	// Required
 	Name string
