@@ -1,5 +1,9 @@
 # Writ Changelog
 
+## 0.8.6 (2016-01-27)
+- Fix: Update exported field check for Go 1.6
+- Docs: Misc updates and clarifications
+
 ## 0.8.5 (2016-01-24)
 
 - Fix: Add a missing nil check to NewOptionDecoder
