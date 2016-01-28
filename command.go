@@ -622,7 +622,7 @@ func checkTags(field reflect.StructField, fieldType string) {
 }
 
 func checkExported(field reflect.StructField, fieldType string) {
-	if field.PkgPath != "" {
+	if field.PkgPath != "" && !field.Anonymous {
 		panicCommand("%ss must be exported (field %s)", fieldType, field.Name)
 	}
 }
