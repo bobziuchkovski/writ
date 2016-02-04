@@ -1,5 +1,8 @@
 # Writ Changelog
 
+## 0.8.7 (2016-02-04)
+- Misc: Update references for renamed GitHub account
+
 ## 0.8.6 (2016-01-27)
 - Fix: Update exported field check for Go 1.6
 - Docs: Misc updates and clarifications
