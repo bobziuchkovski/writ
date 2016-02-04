@@ -1,5 +1,5 @@
 [![Build Status](https://travis-ci.org/ziuchkovski/writ.svg?branch=master)](https://travis-ci.org/ziuchkovski/writ)
-[![Coverage](http://gocover.io/_badge/github.com/ziuchkovski/writ?1)](http://gocover.io/github.com/ziuchkovski/writ)
+[![Coverage](http://gocover.io/_badge/github.com/ziuchkovski/writ?2)](http://gocover.io/github.com/ziuchkovski/writ)
 [![Report Card](http://goreportcard.com/badge/ziuchkovski/writ)](http://goreportcard.com/report/ziuchkovski/writ)
 [![GoDoc](https://godoc.org/github.com/ziuchkovski/writ?status.svg)](https://godoc.org/github.com/ziuchkovski/writ)
 
