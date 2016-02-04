@@ -19,9 +19,10 @@
 // THE SOFTWARE.
 
 /*
-Writ is a flexible option parser with thorough test coverage.  It's meant to be
-simple and "just work".  Applications using writ look and behave similar to
-common GNU command-line applications, making them comfortable for end-users.
+Package writ implements a flexible option parser with thorough test coverage.
+It's meant to be simple and "just work".  Applications using writ look and
+behave similar to common GNU command-line applications, making them comfortable
+for end-users.
 
 Writ implements option decoding with GNU getopt_long conventions. All long and
 short-form option variations are supported: --with-x, --name Sam, --day=Friday,
