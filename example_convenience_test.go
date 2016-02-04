@@ -8,7 +8,7 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
-	"github.com/ziuchkovski/writ"
+	"github.com/bobziuchkovski/writ"
 	"io"
 	"os"
 	"strings"

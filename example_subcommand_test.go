@@ -6,7 +6,7 @@ package writ_test
 
 import (
 	"errors"
-	"github.com/ziuchkovski/writ"
+	"github.com/bobziuchkovski/writ"
 	"os"
 )
 

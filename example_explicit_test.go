@@ -5,7 +5,7 @@
 package writ_test
 
 import (
-	"github.com/ziuchkovski/writ"
+	"github.com/bobziuchkovski/writ"
 	"os"
 	"runtime"
 )

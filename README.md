@@ -1,7 +1,7 @@
-[![Build Status](https://travis-ci.org/ziuchkovski/writ.svg?branch=master)](https://travis-ci.org/ziuchkovski/writ)
-[![Coverage](http://gocover.io/_badge/github.com/ziuchkovski/writ?2)](http://gocover.io/github.com/ziuchkovski/writ)
-[![Report Card](http://goreportcard.com/badge/ziuchkovski/writ)](http://goreportcard.com/report/ziuchkovski/writ)
-[![GoDoc](https://godoc.org/github.com/ziuchkovski/writ?status.svg)](https://godoc.org/github.com/ziuchkovski/writ)
+[![Build Status](https://travis-ci.org/bobziuchkovski/writ.svg?branch=master)](https://travis-ci.org/bobziuchkovski/writ)
+[![Coverage](http://gocover.io/_badge/github.com/bobziuchkovski/writ?1)](http://gocover.io/github.com/bobziuchkovski/writ)
+[![Report Card](http://goreportcard.com/badge/bobziuchkovski/writ)](http://goreportcard.com/report/bobziuchkovski/writ)
+[![GoDoc](https://godoc.org/github.com/bobziuchkovski/writ?status.svg)](https://godoc.org/github.com/bobziuchkovski/writ)
 
 # Writ
 
@@ -21,7 +21,7 @@ Minor breaking changes may occur prior to the 1.0 release.  After the 1.0 releas
 
 ## Basic Use
 
-Please see the [godocs](https://godoc.org/github.com/ziuchkovski/writ) for additional information.
+Please see the [godocs](https://godoc.org/github.com/bobziuchkovski/writ) for additional information.
 
 This example uses writ.New() to build a command from the Greeter's struct fields.  The resulting *writ.Command decodes
 and updates the Greeter's fields in-place.  The Command.ExitHelp() method is used to display help content if --help is
@@ -34,7 +34,7 @@ package main
 
 import (
     "fmt"
-    "github.com/ziuchkovski/writ"
+    "github.com/bobziuchkovski/writ"
     "strings"
 )
 
@@ -83,7 +83,7 @@ Available Options:
 
 ### Subcommands
 
-Please see the [godocs](https://godoc.org/github.com/ziuchkovski/writ) for additional information.
+Please see the [godocs](https://godoc.org/github.com/bobziuchkovski/writ) for additional information.
 
 This example demonstrates subcommands in a busybox style.  There's no requirement that subcommands implement the Run()
 method shown here.  It's just an example of how subcommands might be implemented.
@@ -95,7 +95,7 @@ package main
 
 import (
     "errors"
-    "github.com/ziuchkovski/writ"
+    "github.com/bobziuchkovski/writ"
     "os"
 )
 
@@ -202,7 +202,7 @@ Available Options:
 
 ### Explicit Commands and Options
 
-Please see the [godocs](https://godoc.org/github.com/ziuchkovski/writ) for additional information.
+Please see the [godocs](https://godoc.org/github.com/bobziuchkovski/writ) for additional information.
 
 This example demonstrates explicit Command and Option creation, along with explicit option grouping.
 It checks the host platform and dynamically adds a --bootloader option if the example is run on
@@ -215,7 +215,7 @@ Source:
 package main
 
 import (
-    "github.com/ziuchkovski/writ"
+    "github.com/bobziuchkovski/writ"
     "os"
     "runtime"
 )
@@ -292,7 +292,7 @@ General Options:
 
 ## Authors
 
-Bob Ziuchkovski (@ziuchkovski)
+Bob Ziuchkovski (@bobziuchkovski)
 
 ## License (MIT)
 
