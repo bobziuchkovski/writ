@@ -246,6 +246,9 @@ func main() {
         },
     }
 
+    // Note the explicit option grouping.  Using writ.New(), a single option group is
+    // created for all options/flags that have descriptions.  Without writ.New(), we
+    // need to create the OptionGroup(s) ourselves.
     general := cmd.GroupOptions("help", "v")
     general.Header = "General Options:"
     cmd.Help.OptionGroups = append(cmd.Help.OptionGroups, general)
