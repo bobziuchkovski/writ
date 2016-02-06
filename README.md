@@ -114,28 +114,28 @@ type List struct {
     LongFormat bool `flag:"l" description:"Use long-format output"`
 }
 
-func (r *GoBox) Run(p writ.Path, positional []string) {
+func (g *GoBox) Run(p writ.Path, positional []string) {
     // The user didn't specify a subcommand.  Give them help.
     p.Last().ExitHelp(errors.New("COMMAND is required"))
 }
 
-func (r *Link) Run(p writ.Path, positional []string) {
-    if r.HelpFlag {
+func (l *Link) Run(p writ.Path, positional []string) {
+    if l.HelpFlag {
         p.Last().ExitHelp(nil)
     }
     if len(positional) != 2 {
         p.Last().ExitHelp(errors.New("ln requires two arguments, OLD and NEW"))
     }
     // Link operation omitted for brevity.  This would be os.Link or os.Symlink
-    // based on the r.Symlink value.
+    // based on the l.Symlink value.
 }
 
-func (r *List) Run(p writ.Path, positional []string) {
-    if r.HelpFlag {
+func (l *List) Run(p writ.Path, positional []string) {
+    if l.HelpFlag {
         p.Last().ExitHelp(nil)
     }
     // Listing operation omitted for brevity.  This would be a call to ioutil.ReadDir
-    // followed by conditional formatting based on the r.LongFormat value.
+    // followed by conditional formatting based on the l.LongFormat value.
 }
 
 func main() {
