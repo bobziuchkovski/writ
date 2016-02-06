@@ -39,9 +39,9 @@ import (
 )
 
 type Greeter struct {
-    HelpFlag  bool   `flag:"help" description:"display this help message"`
-    Verbosity int    `flag:"v, verbose" description:"display verbose output"`
-    Name      string `option:"n, name" default:"Everyone" description:"the person to greet"`
+    HelpFlag  bool   `flag:"help" description:"Display this help message and exit"`
+    Verbosity int    `flag:"v, verbose" description:"Display verbose output"`
+    Name      string `option:"n, name" default:"Everyone" description:"The person or people to greet"`
 }
 
 func main() {
