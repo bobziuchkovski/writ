@@ -280,7 +280,7 @@ func (c *Command) validate() {
 		for _, name := range o.Names {
 			_, present := seen[name]
 			if present {
-				panicCommand("command names must be unique (%s is specified multiple times)", name)
+				panicCommand("option names must be unique (%s is specified multiple times)", name)
 			}
 			seen[name] = true
 		}
