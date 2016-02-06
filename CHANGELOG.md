@@ -1,5 +1,11 @@
 # Writ Changelog
 
+## 0.8.8 (2016-02-06)
+- Misc: Fix misc typos
+- Misc: Fix description inconsistency in Greeter example
+- Misc: Rename method receivers in subcommand example
+- Misc: Clarify OptionGroup usage for explicit example
+
 ## 0.8.7 (2016-02-04)
 - Misc: Update references for renamed GitHub account
 
