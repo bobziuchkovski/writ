@@ -405,9 +405,11 @@ func processShortOption(path Path, args []string, optidx int) (opt *Option, newa
 	if opt.Flag {
 		err = opt.Decoder.Decode("")
 		if len(keyval) == 2 {
-			// Insert remaining short-form opts as a new arg after the current one
+			// Short-form options are aggregated.  TODO: Cleanup
+			// Rewrite current arg as -<name> and append remaining aggregate opts as a new arg after the current one
 			newargs = duplicateArgs(args)
 			newargs = append(newargs[:optidx+1], append([]string{"-" + keyval[1]}, newargs[optidx+1:]...)...)
+			newargs[optidx] = "-" + name
 		}
 	} else {
 		if len(keyval) == 2 {
