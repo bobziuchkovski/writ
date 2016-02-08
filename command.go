@@ -136,7 +136,10 @@ func (c *Command) String() string {
 // parameters.
 func (c *Command) Decode(args []string) (path Path, positional []string, err error) {
 	c.validate()
-	c.setDefaults()
+	err = c.setDefaults()
+	if err != nil {
+		return
+	}
 	return parseArgs(c, args)
 }
 
@@ -287,16 +290,27 @@ func (c *Command) validate() {
 	}
 }
 
-func (c *Command) setDefaults() {
+func (c *Command) setDefaults() error {
 	for _, opt := range c.Options {
-		defaulter, ok := opt.Decoder.(OptionDefaulter)
-		if ok {
-			defaulter.SetDefault()
+		if opt.Default == nil {
+			continue
+		}
+		val := opt.Default.Default()
+		if val == "" {
+			continue
+		}
+		err := opt.Decoder.Decode(val)
+		if err != nil {
+			return optionError{err: fmt.Errorf("Option %s initialized with invalid default value %q", opt, val)}
 		}
 	}
 	for _, sub := range c.Subcommands {
-		sub.setDefaults()
+		err := sub.setDefaults()
+		if err != nil {
+			return err
+		}
 	}
+	return nil
 }
 
 /*
@@ -598,13 +612,17 @@ func parseOptionField(field reflect.StructField, fieldVal reflect.Value) *Option
 		opt.Decoder = NewOptionDecoder(fieldVal.Addr().Interface())
 	}
 
-	defaultArg := field.Tag.Get(defaultTag)
-	if defaultArg != "" {
-		opt.Decoder = NewDefaulter(opt.Decoder, defaultArg)
-	}
+	var chain ChainedDefault
 	envName := field.Tag.Get(envTag)
 	if envName != "" {
-		opt.Decoder = NewEnvDefaulter(opt.Decoder, envName)
+		chain = append(chain, NewEnvDefault(envName))
+	}
+	defaultArg := field.Tag.Get(defaultTag)
+	if defaultArg != "" {
+		chain = append(chain, StringDefault(defaultArg))
+	}
+	if len(chain) > 0 {
+		opt.Default = chain
 	}
 
 	opt.validate()

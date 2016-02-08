@@ -347,17 +347,17 @@ var defaultFieldTests = []defaultFieldTest{
 	// Field with an environment default
 	{Args: []string{""}, Valid: true, Field: "EnvDefault", Value: 0},
 	{Args: []string{""}, Valid: true, EnvKey: "ENV_DEFAULT", EnvValue: "2", Field: "EnvDefault", Value: 2},
-	{Args: []string{""}, Valid: true, EnvKey: "ENV_DEFAULT", EnvValue: "foo", Field: "EnvDefault", Value: 0},
 	{Args: []string{"-e", "4"}, Valid: true, EnvKey: "ENV_DEFAULT", EnvValue: "2", Field: "EnvDefault", Value: 4},
-	{Args: []string{"-e", "4"}, Valid: true, EnvKey: "ENV_DEFAULT", EnvValue: "foo", Field: "EnvDefault", Value: 4},
+	{Args: []string{""}, Valid: false, EnvKey: "ENV_DEFAULT", EnvValue: "foo"},
+	{Args: []string{"-e", "4"}, Valid: false, EnvKey: "ENV_DEFAULT", EnvValue: "foo"},
 	{Args: []string{"-e", "foo"}, Valid: false, EnvKey: "ENV_DEFAULT", EnvValue: "2"},
 
 	// Field with both a default value and an environment default
 	{Args: []string{""}, Valid: true, Field: "StackedDefault", Value: 84},
 	{Args: []string{""}, Valid: true, EnvKey: "STACKED_DEFAULT", EnvValue: "2", Field: "StackedDefault", Value: 2},
-	{Args: []string{""}, Valid: true, EnvKey: "STACKED_DEFAULT", EnvValue: "foo", Field: "StackedDefault", Value: 84},
 	{Args: []string{"-s", "4"}, Valid: true, EnvKey: "STACKED_DEFAULT", EnvValue: "2", Field: "StackedDefault", Value: 4},
-	{Args: []string{"-s", "4"}, Valid: true, EnvKey: "STACKED_DEFAULT", EnvValue: "foo", Field: "StackedDefault", Value: 4},
+	{Args: []string{""}, Valid: false, EnvKey: "STACKED_DEFAULT", EnvValue: "foo"},
+	{Args: []string{"-s", "4"}, Valid: false, EnvKey: "STACKED_DEFAULT", EnvValue: "foo"},
 	{Args: []string{"-s", "foo"}, Valid: false, EnvKey: "STACKED_DEFAULT", EnvValue: "foo"},
 	{Args: []string{"-s", "foo"}, Valid: false},
 }
@@ -405,21 +405,11 @@ func TestBogusDefaultField(t *testing.T) {
 		BogusDefault int `option:"b" description:"An int field with a bogus default" default:"bogus"`
 	}{}
 
-	defer func() {
-		r := recover()
-		if r != nil {
-			switch r.(type) {
-			case commandError, optionError:
-				// Intentional No-op
-			default:
-				panic(r)
-			}
-		}
-	}()
-
 	cmd := New("test", spec)
-	cmd.Decode([]string{})
-	t.Errorf("Expected decoding to panic on bogus default value, but this didn't happen.")
+	_, _, err := cmd.Decode([]string{})
+	if err == nil {
+		t.Errorf("Expected decoding error on bogus default value, but this didn't happen.")
+	}
 }
 
 /*
