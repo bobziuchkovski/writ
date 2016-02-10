@@ -370,8 +370,8 @@ func (d envDefaulter) Default() string {
 // and returns the first non-empty value, or "" if all values are empty.
 type ChainedDefault []Defaulter
 
-func (dc ChainedDefault) Default() string {
-	for _, defaulter := range dc {
+func (d ChainedDefault) Default() string {
+	for _, defaulter := range d {
 		value := defaulter.Default()
 		if value != "" {
 			return value
