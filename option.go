@@ -62,11 +62,11 @@ type Option struct {
 	Decoder OptionDecoder
 
 	// Optional
-	Default     Defaulter // If set, Decoder.Decode() is called with Default.Default() prior to decoding args
-	Flag        bool            // If set, the Option takes no arguments
-	Plural      bool            // If set, the Option may be specified multiple times
-	Description string          // Options without descriptions are hidden
-	Placeholder string          // Displayed next to option in help output (e.g. FILE)
+	Default     Defaulter // The Default value is used when no explicit value is provided
+	Flag        bool      // If set, the Option takes no arguments
+	Plural      bool      // If set, the Option may be specified multiple times
+	Description string    // Options without descriptions are hidden
+	Placeholder string    // Displayed next to option in help output (e.g. FILE)
 }
 
 // ShortNames returns a filtered slice of the names that are exactly one rune in length.
