@@ -341,13 +341,16 @@ type flagAccumulator struct {
 	value *int
 }
 
-// Defaulter returns a default value for an Option
+// Defaulter returns a default value for an Option.
 type Defaulter interface {
 	Default() string
 }
 
+// StringDefault returns its value when Default() is called.  This makes it easy to
+// pass string values as defaults for the Option.Default field.
 type StringDefault string
 
+// Default returns the string value of d
 func (d StringDefault) Default() string {
 	return string(d)
 }
@@ -370,6 +373,7 @@ func (d envDefaulter) Default() string {
 // and returns the first non-empty value, or "" if all values are empty.
 type ChainedDefault []Defaulter
 
+// Default returns the first non-empty value for the elements in d, or "".
 func (d ChainedDefault) Default() string {
 	for _, defaulter := range d {
 		value := defaulter.Default()
