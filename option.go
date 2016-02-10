@@ -62,7 +62,7 @@ type Option struct {
 	Decoder OptionDecoder
 
 	// Optional
-	Default     OptionDefaulter // If set, Decoder.Decode() is called with Default.Default() prior to decoding args
+	Default     Defaulter // If set, Decoder.Decode() is called with Default.Default() prior to decoding args
 	Flag        bool            // If set, the Option takes no arguments
 	Plural      bool            // If set, the Option may be specified multiple times
 	Description string          // Options without descriptions are hidden
@@ -341,8 +341,8 @@ type flagAccumulator struct {
 	value *int
 }
 
-// OptionDefaulter returns a default value for an Option
-type OptionDefaulter interface {
+// Defaulter returns a default value for an Option
+type Defaulter interface {
 	Default() string
 }
 
@@ -352,9 +352,9 @@ func (d StringDefault) Default() string {
 	return string(d)
 }
 
-// NewEnvDefault builds an OptionDefaulter that returns the value of the
+// NewEnvDefault builds a Defaulter that returns the value of the
 // environment variable named by key when it's Default() method is called.
-func NewEnvDefault(key string) OptionDefaulter {
+func NewEnvDefault(key string) Defaulter {
 	return envDefaulter{key}
 }
 
@@ -368,7 +368,7 @@ func (d envDefaulter) Default() string {
 
 // ChainedDefault checks the Default() value of each element in it's slice
 // and returns the first non-empty value, or "" if all values are empty.
-type ChainedDefault []OptionDefaulter
+type ChainedDefault []Defaulter
 
 func (dc ChainedDefault) Default() string {
 	for _, defaulter := range dc {
