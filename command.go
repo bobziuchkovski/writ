@@ -81,6 +81,15 @@ func (p Path) findOption(name string) *Option {
 	return nil
 }
 
+// options returns a slice of all options on the command path
+func (p Path) options() []*Option {
+	var options []*Option
+	for _, command := range p {
+		options = append(options, command.Options...)
+	}
+	return options
+}
+
 // New reads the input spec, searching for fields tagged with "option",
 // "flag", or "command".  The field type and tags are used to construct
 // a corresponding Command instance, which can be used to decode program
@@ -136,7 +145,6 @@ func (c *Command) String() string {
 // parameters.
 func (c *Command) Decode(args []string) (path Path, positional []string, err error) {
 	c.validate()
-	c.setDefaults()
 	return parseArgs(c, args)
 }
 
@@ -287,18 +295,6 @@ func (c *Command) validate() {
 	}
 }
 
-func (c *Command) setDefaults() {
-	for _, opt := range c.Options {
-		defaulter, ok := opt.Decoder.(OptionDefaulter)
-		if ok {
-			defaulter.SetDefault()
-		}
-	}
-	for _, sub := range c.Subcommands {
-		sub.setDefaults()
-	}
-}
-
 /*
  * Argument parsing
  */
@@ -348,6 +344,22 @@ func parseArgs(c *Command, args []string) (path Path, positional []string, err e
 		// Unmatched positional arg
 		parseCmd = false
 		positional = append(positional, a)
+	}
+
+	// Set defaults for unspecified options
+	for _, opt := range path.options() {
+		_, present := seen[opt]
+		if !present && opt.Default != nil {
+			val := opt.Default.Default()
+			if val == "" {
+				continue
+			}
+			err = opt.Decoder.Decode(val)
+			if err != nil {
+				err = optionError{err: fmt.Errorf("Option %s initialized with invalid default value %q", opt, val)}
+				return
+			}
+		}
 	}
 	return
 }
@@ -598,13 +610,17 @@ func parseOptionField(field reflect.StructField, fieldVal reflect.Value) *Option
 		opt.Decoder = NewOptionDecoder(fieldVal.Addr().Interface())
 	}
 
-	defaultArg := field.Tag.Get(defaultTag)
-	if defaultArg != "" {
-		opt.Decoder = NewDefaulter(opt.Decoder, defaultArg)
-	}
+	var chain ChainedDefault
 	envName := field.Tag.Get(envTag)
 	if envName != "" {
-		opt.Decoder = NewEnvDefaulter(opt.Decoder, envName)
+		chain = append(chain, NewEnvDefault(envName))
+	}
+	defaultArg := field.Tag.Get(defaultTag)
+	if defaultArg != "" {
+		chain = append(chain, StringDefault(defaultArg))
+	}
+	if len(chain) > 0 {
+		opt.Default = chain
 	}
 
 	opt.validate()

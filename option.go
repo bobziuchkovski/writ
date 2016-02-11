@@ -62,10 +62,11 @@ type Option struct {
 	Decoder OptionDecoder
 
 	// Optional
-	Flag        bool   // If set, the Option takes no arguments
-	Plural      bool   // If set, the Option may be specified multiple times
-	Description string // Options without descriptions are hidden
-	Placeholder string // Displayed next to option in help output (e.g. FILE)
+	Default     Defaulter // The Default value is used when no explicit value is provided
+	Flag        bool      // If set, the Option takes no arguments
+	Plural      bool      // If set, the Option may be specified multiple times
+	Description string    // Options without descriptions are hidden
+	Placeholder string    // Displayed next to option in help output (e.g. FILE)
 }
 
 // ShortNames returns a filtered slice of the names that are exactly one rune in length.
@@ -340,58 +341,45 @@ type flagAccumulator struct {
 	value *int
 }
 
-// OptionDefaulter initializes option values to defaults.  If an OptionDecoder
-// implements the OptionDefaulter interface, its SetDefault() method is called
-// prior to decoding options.
-type OptionDefaulter interface {
-	SetDefault()
+// Defaulter returns a default value for an Option.
+type Defaulter interface {
+	Default() string
 }
 
-// NewDefaulter builds an OptionDecoder that implements OptionDefaulter.
-// SetDefault calls decoder.Decode() with the value of defaultArg.  If the
-// value fails to decode, SetDefault panics.
-func NewDefaulter(decoder OptionDecoder, defaultArg string) OptionDecoder {
-	return defaulter{decoder, defaultArg}
+// StringDefault returns its value when Default() is called.  This makes it easy to
+// pass string values as defaults for the Option.Default field.
+type StringDefault string
+
+// Default returns the string value of d
+func (d StringDefault) Default() string {
+	return string(d)
 }
 
-type defaulter struct {
-	OptionDecoder
-	defaultArg string
-}
-
-func (d defaulter) SetDefault() {
-	err := d.Decode(d.defaultArg)
-	if err != nil {
-		// Default values should be known correct values, so we panic on error
-		panicOption("error setting default value: decoder rejected arg %q", d.defaultArg)
-	}
-}
-
-// NewEnvDefaulter builds an OptionDecoder that implements OptionDefaulter.
-// SetDefault calls decoder.Decode() with the value of the environment
-// variable named by key.  If the environment variable isn't set or fails to
-// decode, SetDefault checks if decoder implements OptionDefault.  If so,
-// SetDefault calls decoder.SetDefault().  Otherwise, no action is taken.
-func NewEnvDefaulter(decoder OptionDecoder, key string) OptionDecoder {
-	return envDefaulter{decoder, key}
+// NewEnvDefault builds a Defaulter that returns the value of the
+// environment variable named by key when it's Default() method is called.
+func NewEnvDefault(key string) Defaulter {
+	return envDefaulter{key}
 }
 
 type envDefaulter struct {
-	OptionDecoder
 	key string
 }
 
-func (d envDefaulter) SetDefault() {
-	val := os.Getenv(d.key)
-	if val != "" {
-		err := d.Decode(val)
-		if err == nil {
-			return
+func (d envDefaulter) Default() string {
+	return os.Getenv(d.key)
+}
+
+// ChainedDefault checks the Default() value of each element in it's slice
+// and returns the first non-empty value, or "" if all values are empty.
+type ChainedDefault []Defaulter
+
+// Default returns the first non-empty value for the elements in d, or "".
+func (d ChainedDefault) Default() string {
+	for _, defaulter := range d {
+		value := defaulter.Default()
+		if value != "" {
+			return value
 		}
 	}
-
-	defaulter, ok := d.OptionDecoder.(OptionDefaulter)
-	if ok {
-		defaulter.SetDefault()
-	}
+	return ""
 }

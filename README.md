@@ -259,6 +259,7 @@ func main() {
             Names:       []string{"bootloader"},
             Description: "Use the specified bootloader (grub, grub2, or lilo)",
             Decoder:     writ.NewOptionDecoder(&config.bootloader),
+            Default:     writ.StringDefault("grub2"),
             Placeholder: "NAME",
         })
         platform := cmd.GroupOptions("bootloader")

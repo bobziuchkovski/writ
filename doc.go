@@ -91,9 +91,7 @@ The New() function recognizes the following combinations of field tags:
 		- description: the description to display for help output
 
 If both "default" and "env" are specified for an option field, the environment
-variable is consulted first.  If the environment variable is present and
-decodes without error, that value is used.  Otherwise, the value for the
-"default" tag is used.  Values specified via parsed arguments take precedence
-over both types of defaults.
+variable is consulted first.  Values specified via parsed arguments take
+precedence over both types of defaults.
 */
 package writ
