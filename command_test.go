@@ -49,24 +49,25 @@ func CompareField(structval interface{}, field string, value interface{}) (equal
 
 type topSpec struct {
 	MidSpec  midSpec `command:"mid" alias:"second, 2nd" description:"a mid-level command"`
-	HelpFlag bool    `flag:"h" description:"help flag on a top-level command"`
+	HelpFlag bool    `flag:"h, help" description:"help flag on a top-level command"`
 	Top      int     `option:"t, topval" description:"an option on a top-level command"`
 }
 
 type midSpec struct {
 	Mid        int        `option:"m, midval" description:"an option on a mid-level command"`
-	HelpFlag   bool       `flag:"h" description:"help flag on a mid-level command"`
+	HelpFlag   bool       `flag:"h, help" description:"help flag on a mid-level command"`
 	BottomSpec bottomSpec `command:"bottom" alias:"third" description:"a bottom-level command"`
 }
 
 type bottomSpec struct {
 	Bottom   int  `option:"b, bottomval" description:"an option on a bottom-level command"`
-	HelpFlag bool `flag:"h" description:"help flag on a bottom-level command"`
+	HelpFlag bool `flag:"h, help" description:"help flag on a bottom-level command"`
 }
 
 type commandFieldTest struct {
 	Args       []string
 	Valid      bool
+	Err        string // TODO: rewrite all Valid: false cases with Err: message
 	Path       string
 	Positional []string
 	Field      string
@@ -107,6 +108,9 @@ var commandFieldTests = []commandFieldTest{
 	{Args: []string{"-f"}, Valid: false},
 	{Args: []string{"-f", "bar"}, Valid: false},
 	{Args: []string{"-fbar"}, Valid: false},
+	{Args: []string{"--help", "--help"}, Valid: false, Err: `option "--help" specified too many times`},
+	{Args: []string{"-h", "-h"}, Valid: false, Err: `option "-h" specified too many times`},
+	{Args: []string{"-hh"}, Valid: false, Err: `option "-h" specified too many times`},
 
 	// Path: top mid
 	{Args: []string{"mid"}, Valid: true, Path: "top mid", Positional: []string{}},
@@ -160,6 +164,9 @@ var commandFieldTests = []commandFieldTest{
 	{Args: []string{"mid", "-f"}, Valid: false},
 	{Args: []string{"mid", "-f", "bar"}, Valid: false},
 	{Args: []string{"mid", "-fbar"}, Valid: false},
+	{Args: []string{"mid", "--help", "--help"}, Valid: false, Err: `option "--help" specified too many times`},
+	{Args: []string{"mid", "-h", "-h"}, Valid: false, Err: `option "-h" specified too many times`},
+	{Args: []string{"mid", "-hh"}, Valid: false, Err: `option "-h" specified too many times`},
 
 	// Path: top mid bottom
 	{Args: []string{"mid", "bottom"}, Valid: true, Path: "top mid bottom", Positional: []string{}},
@@ -199,6 +206,9 @@ var commandFieldTests = []commandFieldTest{
 	{Args: []string{"bottom", "-b", "3"}, Valid: false},
 	{Args: []string{"-b", "3", "bottom"}, Valid: false},
 	{Args: []string{"-b", "3", "mid", "bottom"}, Valid: false},
+	{Args: []string{"mid", "--help", "--help", "bottom"}, Valid: false, Err: `option "--help" specified too many times`},
+	{Args: []string{"mid", "-h", "-h", "bottom"}, Valid: false, Err: `option "-h" specified too many times`},
+	{Args: []string{"mid", "-hh", "bottom"}, Valid: false, Err: `option "-h" specified too many times`},
 
 	// Duplicate option routing (HelpFlag)
 	{Args: []string{"-h"}, Valid: true, Path: "top", Positional: []string{}, Field: "HelpFlagTop", Value: true},
@@ -244,6 +254,9 @@ func runCommandFieldTest(t *testing.T, spec *topSpec, test commandFieldTest) {
 	if !test.Valid {
 		if err == nil {
 			t.Errorf("Expected error but none received. Args: %q", test.Args)
+		}
+		if test.Err != "" && err.Error() != test.Err {
+			t.Errorf("Invalid error message.  Expected: %s, Received: %s", test.Err, err.Error())
 		}
 		return
 	}
