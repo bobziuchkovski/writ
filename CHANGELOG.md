@@ -1,5 +1,9 @@
 # Writ Changelog
 
+## 0.8.9 (2016-02-11)
+- Fix: The error message for repeated aggregate short-form options reported the full aggregate (-hh)
+- Fix: The error message for repeated options always referenced args[0] rather than the current arg
+
 ## 0.8.8 (2016-02-06)
 - Misc: Fix misc typos
 - Misc: Fix description inconsistency in Greeter example
