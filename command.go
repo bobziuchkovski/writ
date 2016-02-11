@@ -338,7 +338,7 @@ func parseArgs(c *Command, args []string) (path Path, positional []string, err e
 			}
 			_, present := seen[opt]
 			if present && !opt.Plural {
-				err = fmt.Errorf("option %q specified too many times", args[0])
+				err = fmt.Errorf("option %q specified too many times", args[i])
 				return
 			}
 			seen[opt] = true
